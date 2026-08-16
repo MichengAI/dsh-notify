@@ -93,7 +93,10 @@ export function NotifySection(): ReactElement {
 
   return (
     <div className="dsh-nt">
-      <p className="dsh-nt-intro">完成后、需要权限或提问时，按类型分别提醒你。</p>
+      <header className="dsh-nt-head">
+        <h2 className="dsh-nt-title">通知</h2>
+        <p className="dsh-nt-intro">完成后、需要权限或提问时，按类型分别提醒你。</p>
+      </header>
       {error ? <div className="dsh-nt-error">{error}</div> : null}
       {loading ? <p className="dsh-nt-hint">加载中…</p> : (
         <div className="dsh-nt-list">

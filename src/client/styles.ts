@@ -2,7 +2,7 @@ const STYLE_ID = 'dsh-notify-settings'
 
 const CSS_TEXT = `
 .dsh-nt{box-sizing:border-box;max-width:760px;width:100%;margin:0 auto;padding:0 0 32px;color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;gap:0}
-.dsh-nt-intro{margin:0 0 8px;color:var(--dsw-alias-label-tertiary);font-size:13px;line-height:1.5}
+.dsh-nt-head{margin:0 0 8px}.dsh-nt-title{margin:0;font-size:20px;line-height:28px;font-weight:650;letter-spacing:-.2px}.dsh-nt-intro{margin:4px 0 0;max-width:42em;color:var(--dsw-alias-label-tertiary);font-size:13px;line-height:1.5}
 .dsh-nt-error{margin:8px 0 0;color:var(--dsw-alias-state-error-primary);font-size:12px;line-height:18px}
 .dsh-nt-list{display:flex;flex-direction:column}
 .dsh-nt-row{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:14px 0;border-top:1px solid var(--dsw-alias-border-l2)}
