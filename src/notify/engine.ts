@@ -45,6 +45,7 @@ export interface NotifyEngine {
   markCompleted(sessionId: string, title: string): void
   setFocused(focused: boolean): void
   isFocused(): boolean
+  log(message: string): void
 }
 
 export function createNotifyEngine(options: NotifyEngineOptions): NotifyEngine {
@@ -53,7 +54,7 @@ export function createNotifyEngine(options: NotifyEngineOptions): NotifyEngine {
   const logFile = path.join(options.stateDir, 'debug.log')
   const minIntervalMs = readMinIntervalMs()
   let lastToastAt = 0
-  let focused = true
+  let focused = false
   let focusTimer: ReturnType<typeof setTimeout> | null = null
   let trayStarted = false
   let completeBuffer: CompleteBufferItem[] = []
@@ -180,7 +181,12 @@ export function createNotifyEngine(options: NotifyEngineOptions): NotifyEngine {
     isFocused() {
       return focused
     },
+    log(message) {
+      writeLog(message)
+    },
   }
 }
+
+
 
 

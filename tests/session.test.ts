@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { isGoalAutoContinuing, isRootAgent, readAssistantSnippet, readSessionTitle } from '../src/session.ts'
+import { isGoalAutoContinuing, isPrimarySessionId, isRootAgent, isSubAgent, readAssistantSnippet, readSessionTitle } from '../src/session.ts'
 import { addCompletedItem, createEmptyTrayState, shiftPending } from '../src/notify/tray-state.ts'
 
 test('优先读取 session/title 事件', () => {
@@ -50,3 +50,25 @@ test('托盘状态按会话去重并限制数量', () => {
   assert.equal(state.completed[0]?.title, '更新后的标题')
   assert.equal(state.pending, 0)
 })
+
+test('网页和 IM 会话不算子代理', () => {
+  assert.equal(isPrimarySessionId('session-abc'), true)
+  assert.equal(isPrimarySessionId('im:wecom:x'), true)
+  assert.equal(isPrimarySessionId('dsh-automation-session-1'), true)
+  assert.equal(isPrimarySessionId('child-tool-1'), false)
+})
+
+test('子代理判定只在明确非根时代码拦截', () => {
+  const child = { id: 'child-1' }
+  const root = { id: 'root-1' }
+  const ctx = {
+    get: () => ({
+      roots: () => [root],
+      list: () => [root, child],
+    }),
+  }
+  assert.equal(isSubAgent(ctx, child), true)
+  assert.equal(isSubAgent(ctx, root), false)
+  assert.equal(isSubAgent(ctx, { id: 'session-web-1' }), false)
+})
+

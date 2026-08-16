@@ -15,11 +15,22 @@ import { createNotifyEngine } from './notify/engine.ts'
 import { shouldNotifyAsk, shouldNotifyComplete } from './policy.ts'
 import { wrapUserQuestions } from './questions.ts'
 import { registerNotifyRoutes, type SettingsScopeLike } from './routes.ts'
-import { isGoalAutoContinuing, isRootAgent, readAssistantSnippet, readSessionTitle, seedAgentStatuses } from './session.ts'
+import {
+  agentKey,
+  isSubAgent,
+  readAssistantSnippet,
+  readSessionTitle,
+  seedAgentStatuses,
+  type AgentLike,
+  type SessionLike,
+} from './session.ts'
 
 export const name = '@michengai/dsh-notify'
 export const inject = ['userQuestions']
 export const Config = Schema.object({})
+
+const COMPLETE_SETTLE_MS = 400
+const COMPLETE_DEDUPE_MS = 4000
 
 function resolveDshHome(): string {
   return process.env.DSH_HOME && process.env.DSH_HOME.trim() !== ''
@@ -33,6 +44,15 @@ async function tryImport<T>(specifier: string): Promise<T | undefined> {
   } catch {
     return undefined
   }
+}
+
+function pickObject(args: unknown[], keys: string[]): Record<string, unknown> {
+  for (const arg of args) {
+    if (arg === null || typeof arg !== 'object' || Array.isArray(arg)) continue
+    const record = arg as Record<string, unknown>
+    if (keys.some(key => key in record)) return record
+  }
+  return {}
 }
 
 export function apply(ctx: Context): void {
@@ -70,32 +90,128 @@ export function apply(ctx: Context): void {
   })
 
   const lastStatus = seedAgentStatuses(ctx)
-  ctx.on('agent/status', (payload: { agent?: { id?: unknown; session?: unknown }; status?: string }) => {
+  const pendingTimers = new Map<string, ReturnType<typeof setTimeout>>()
+  const lastNotifiedAt = new Map<string, number>()
+
+  const cancelPending = (id: string): void => {
+    const timer = pendingTimers.get(id)
+    if (timer === undefined) return
+    clearTimeout(timer)
+    pendingTimers.delete(id)
+  }
+
+  const resolveLiveAgent = (input: AgentLike | undefined): AgentLike | undefined => {
+    const id = agentKey(input)
+    if (id === '') return input
     try {
-      const agent = payload?.agent
-      const status = payload?.status
+      const agents = ctx.get('agents') as { get?: (id: string) => AgentLike | undefined } | undefined
+      return agents?.get?.(id) ?? input
+    } catch {
+      return input
+    }
+  }
+
+  const emitComplete = (rawAgent: AgentLike | undefined, reason: string): void => {
+    const agent = resolveLiveAgent(rawAgent)
+    const id = agentKey(agent) || agentKey(rawAgent)
+    if (id === '') {
+      engine.log(`complete skip empty-id reason=${reason}`)
+      return
+    }
+    cancelPending(id)
+    pendingTimers.set(id, setTimeout(() => {
+      pendingTimers.delete(id)
+      try {
+        const live = resolveLiveAgent(agent ?? rawAgent)
+        if (live?.status === 'running') {
+          engine.log(`complete skip still-running id=${id} reason=${reason}`)
+          return
+        }
+        if (isSubAgent(ctx, live ?? agent)) {
+          engine.log(`complete skip subagent id=${id} reason=${reason}`)
+          return
+        }
+        if (!shouldNotifyComplete(getConfig(), engine.isFocused())) {
+          engine.log(`complete skip policy id=${id} focused=${engine.isFocused()} reason=${reason}`)
+          return
+        }
+        const now = Date.now()
+        if (now - (lastNotifiedAt.get(id) ?? 0) < COMPLETE_DEDUPE_MS) {
+          engine.log(`complete skip dedupe id=${id} reason=${reason}`)
+          return
+        }
+        lastNotifiedAt.set(id, now)
+        const session = (live ?? agent)?.session
+        const title = readSessionTitle(session)
+        const snippet = readAssistantSnippet(session, 100)
+        engine.markCompleted(id, title ?? '')
+        engine.notifyComplete(
+          title ?? '',
+          title !== undefined ? `会话：${title}` : '回合结束，可以回来查看结果了',
+          snippet,
+        )
+        engine.log(`complete notify id=${id} reason=${reason} title=${title ?? ''}`)
+      } catch (error) {
+        const message = String((error as Error).message ?? error)
+        engine.log(`complete error id=${id} reason=${reason} ${message}`)
+        ctx.logger.warn(`完成提醒失败：${message}`)
+      }
+    }, COMPLETE_SETTLE_MS))
+  }
+
+  ctx.on('agent/status', (...args: unknown[]) => {
+    try {
+      const payload = pickObject(args, ['status', 'agent']) as { agent?: AgentLike; status?: string }
+      const status = payload.status
       if (status !== 'idle' && status !== 'running') return
-      const id = String(agent?.id ?? '')
-      const key = id !== '' ? id : 'unknown'
+      const agent = payload.agent
+      const key = agentKey(agent) || 'unknown'
       const previous = lastStatus.get(key) ?? 'idle'
       lastStatus.set(key, status)
-      if (status !== 'idle' || previous !== 'running') return
-      if (!isRootAgent(ctx, agent)) return
-      if (isGoalAutoContinuing(ctx, agent)) return
-      if (!shouldNotifyComplete(getConfig(), engine.isFocused())) return
-      const session = agent?.session as { title?: unknown; events?: unknown } | undefined
-      const title = readSessionTitle(session)
-      const snippet = readAssistantSnippet(session, 100)
-      engine.markCompleted(key, title ?? '')
-      engine.notifyComplete(
-        title ?? '',
-        title !== undefined ? `会话：${title}` : '回合结束，可以回来查看结果了',
-        snippet,
-      )
+      engine.log(`agent/status id=${key} ${previous}->${status}`)
+      if (status === 'running') {
+        cancelPending(key)
+        return
+      }
+      emitComplete(agent, `status:${previous}->idle`)
     } catch (error) {
       ctx.logger.warn(`完成提醒失败：${String((error as Error).message ?? error)}`)
     }
-  })
+  }, { global: true })
+
+  ctx.on('agent/turn-stopping', (...args: unknown[]) => {
+    try {
+      const payload = pickObject(args, ['agent', 'turn']) as { agent?: AgentLike; turn?: unknown }
+      engine.log(`agent/turn-stopping id=${agentKey(payload.agent)} turn=${String(payload.turn ?? '')}`)
+      emitComplete(payload.agent, 'turn-stopping')
+    } catch (error) {
+      ctx.logger.warn(`完成提醒失败：${String((error as Error).message ?? error)}`)
+    }
+  }, { global: true })
+
+  ctx.on('session/event', (...args: unknown[]) => {
+    try {
+      const session = args.find(item => {
+        if (item === null || typeof item !== 'object' || Array.isArray(item)) return false
+        const record = item as Record<string, unknown>
+        return 'id' in record && ('events' in record || 'title' in record)
+      }) as SessionLike | undefined
+      const event = args.find(item => {
+        if (item === null || typeof item !== 'object' || Array.isArray(item)) return false
+        return 'type' in (item as Record<string, unknown>)
+      }) as { type?: unknown; data?: { reason?: { kind?: unknown }; turn?: unknown } } | undefined
+      if (event?.type !== 'turn/end') return
+      const kind = typeof event.data?.reason?.kind === 'string' ? event.data.reason.kind : 'unknown'
+      const sessionId = agentKey({ id: session?.id })
+      engine.log(`session/event turn/end id=${sessionId} kind=${kind}`)
+      if (kind === 'aborted') return
+      const target: AgentLike = sessionId === '' ? {} : { id: sessionId }
+      if (session !== undefined) target.session = session
+      emitComplete(target, `turn-end:${kind}`)
+    } catch (error) {
+      ctx.logger.warn(`完成提醒失败：${String((error as Error).message ?? error)}`)
+    }
+  }, { global: true })
 
   const restoreAsk = wrapUserQuestions(ctx, engine, getConfig)
   if (restoreAsk !== null) ctx.effect(() => restoreAsk, 'dsh-notify: 还原 userQuestions')
@@ -120,7 +236,6 @@ export function apply(ctx: Context): void {
       if (allowed) engine.updatePending(-1)
     }
   })
-
 
   ctx.inject(['webServer'], wctx => {
     const webServer = wctx.get('webServer') as Parameters<typeof registerNotifyRoutes>[0]['webServer'] | undefined
@@ -186,7 +301,3 @@ async function setupSettings(ctx: Context): Promise<SettingsScopeLike | null> {
 
   return null
 }
-
-
-
-

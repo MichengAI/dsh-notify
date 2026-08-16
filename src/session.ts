@@ -1,4 +1,5 @@
 export interface SessionLike {
+  id?: unknown
   title?: unknown
   events?: unknown
 }
@@ -6,6 +7,7 @@ export interface SessionLike {
 export interface AgentLike {
   id?: unknown
   session?: SessionLike
+  status?: unknown
 }
 
 export function readSessionTitle(session: SessionLike | undefined): string | undefined {
@@ -46,6 +48,15 @@ export function readAssistantSnippet(session: SessionLike | undefined, maxChars:
   return ''
 }
 
+export function agentKey(agent: { id?: unknown } | undefined): string {
+  const id = String(agent?.id ?? '')
+  return id.trim()
+}
+
+export function isPrimarySessionId(id: string): boolean {
+  return id.startsWith('session-') || id.startsWith('im:') || id.startsWith('dsh-automation-session-')
+}
+
 export function isRootAgent(ctx: { get(name: string): unknown }, agent: { id?: unknown } | undefined): boolean {
   try {
     const agents = ctx.get('agents') as { roots?: () => Array<{ id?: unknown }> } | undefined
@@ -57,13 +68,33 @@ export function isRootAgent(ctx: { get(name: string): unknown }, agent: { id?: u
   }
 }
 
+export function isSubAgent(ctx: { get(name: string): unknown }, agent: { id?: unknown } | undefined): boolean {
+  try {
+    const id = agentKey(agent)
+    if (id !== '' && isPrimarySessionId(id)) return false
+    const agents = ctx.get('agents') as {
+      roots?: () => Array<{ id?: unknown }>
+      list?: () => Array<{ id?: unknown }>
+    } | undefined
+    const roots = agents?.roots?.() ?? []
+    const list = agents?.list?.() ?? []
+    if (list.length === 0) return false
+    const matches = (item: { id?: unknown }) => item === agent || (agent?.id !== undefined && item?.id === agent.id)
+    if (roots.some(matches)) return false
+    return list.some(matches)
+  } catch {
+    return false
+  }
+}
+
 export function seedAgentStatuses(ctx: { get(name: string): unknown }): Map<string, string> {
   const seeded = new Map<string, string>()
   try {
     const agents = ctx.get('agents') as { list?: () => Array<{ id?: unknown; status?: unknown }> } | undefined
     for (const agent of agents?.list?.() ?? []) {
-      if (agent?.id === undefined) continue
-      seeded.set(String(agent.id), agent.status === 'running' ? 'running' : 'idle')
+      const key = agentKey(agent)
+      if (key === '') continue
+      seeded.set(key, agent.status === 'running' ? 'running' : 'idle')
     }
   } catch {
     /* 启动快照失败时按事件自行建立 */
@@ -88,4 +119,3 @@ export function isGoalAutoContinuing(ctx: { get(name: string): unknown }, agent:
     return false
   }
 }
-

@@ -21,5 +21,6 @@ export interface NotifyEngine {
     markCompleted(sessionId: string, title: string): void;
     setFocused(focused: boolean): void;
     isFocused(): boolean;
+    log(message: string): void;
 }
 export declare function createNotifyEngine(options: NotifyEngineOptions): NotifyEngine;

@@ -7,7 +7,7 @@ declare module '@deepseek-ai/cordis' {
       warn(message: string): void
     }
     effect<T>(factory: () => T | Promise<T> | (() => void), label?: string): T
-    on(name: string, listener: (...args: any[]) => any): () => void
+    on(name: string, listener: (...args: any[]) => any, options?: { global?: boolean; prepend?: boolean }): () => void
     get(name: string): unknown
     inject(deps: string[], callback: (ctx: Context) => void): void
   }
@@ -29,5 +29,6 @@ declare module '@deepseek-ai/dsh-home-paths' {
 declare module '@deepseek-ai/dsh-client-ui-primitives' {
   export const Menu: (props: any) => any
 }
+
 
 
