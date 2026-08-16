@@ -12,6 +12,7 @@ import {
   type NotifyConfig,
 } from './config.ts'
 import { createNotifyEngine } from './notify/engine.ts'
+import { shouldNotifyAsk, shouldNotifyComplete } from './policy.ts'
 import { wrapUserQuestions } from './questions.ts'
 import { registerNotifyRoutes, type SettingsScopeLike } from './routes.ts'
 import { isGoalAutoContinuing, isRootAgent, readAssistantSnippet, readSessionTitle } from './session.ts'
@@ -79,6 +80,7 @@ export function apply(ctx: Context): void {
       const session = agent.session as { title?: unknown; events?: unknown } | undefined
       const title = readSessionTitle(session)
       const snippet = readAssistantSnippet(session, 100)
+      if (!shouldNotifyComplete(getConfig(), engine.isFocused())) return
       engine.markCompleted(String(agent.id ?? ''), title ?? '')
       engine.notifyComplete(
         title ?? '',
@@ -90,8 +92,30 @@ export function apply(ctx: Context): void {
     }
   })
 
-  const restoreAsk = wrapUserQuestions(ctx, engine)
+  const restoreAsk = wrapUserQuestions(ctx, engine, getConfig)
   if (restoreAsk !== null) ctx.effect(() => restoreAsk, 'dsh-notify: 还原 userQuestions')
+
+  ctx.on('approval/request', async (req: { toolName?: unknown; reason?: unknown }, next: () => Promise<unknown>) => {
+    const allowed = shouldNotifyAsk(getConfig(), 'permission')
+    if (allowed) {
+      try {
+        engine.updatePending(1)
+        engine.showToast({
+          title: 'DSH 需要权限',
+          message: typeof req.toolName === 'string' ? req.toolName : '需要你批准后才能继续',
+          detail: typeof req.reason === 'string' ? req.reason : '',
+        })
+      } catch (error) {
+        ctx.logger.warn(`权限提醒失败：${String((error as Error).message ?? error)}`)
+      }
+    }
+    try {
+      return await next()
+    } finally {
+      if (allowed) engine.updatePending(-1)
+    }
+  })
+
 
   ctx.inject(['webServer'], wctx => {
     const webServer = wctx.get('webServer') as Parameters<typeof registerNotifyRoutes>[0]['webServer'] | undefined
@@ -132,6 +156,11 @@ async function setupSettings(ctx: Context): Promise<SettingsScopeLike | null> {
     respectSystemDnd: Schema.boolean().default(true),
     completeMode: Schema.union([Schema.const('toast'), Schema.const('badge-only')]).default('toast'),
     completeMerge: Schema.boolean().default(true),
+    channels: Schema.object({
+      complete: Schema.union([Schema.const('always'), Schema.const('unfocused'), Schema.const('off')]).default('unfocused'),
+      permission: Schema.boolean().default(true),
+      question: Schema.boolean().default(true),
+    }).default({ complete: 'unfocused', permission: true, question: true }),
   })
 
   if (typeof settings.register === 'function' && typeof settingsMod?.settingsNamespace === 'function') {
@@ -156,3 +185,4 @@ async function setupSettings(ctx: Context): Promise<SettingsScopeLike | null> {
 
   return null
 }
+

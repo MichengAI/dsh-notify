@@ -49,6 +49,8 @@ export interface NotifyEngine {
   previewSound(sound: SoundId): void
   updatePending(delta: number): void
   markCompleted(sessionId: string, title: string): void
+  setFocused(focused: boolean): void
+  isFocused(): boolean
 }
 
 export function createNotifyEngine(options: NotifyEngineOptions): NotifyEngine {
@@ -58,6 +60,7 @@ export function createNotifyEngine(options: NotifyEngineOptions): NotifyEngine {
   const logFile = path.join(options.stateDir, 'debug.log')
   const minIntervalMs = readMinIntervalMs()
   let lastToastAt = 0
+  let focused = true
   let trayStarted = false
   let completeBuffer: CompleteBufferItem[] = []
   let completeTimer: ReturnType<typeof setTimeout> | null = null
@@ -193,6 +196,14 @@ export function createNotifyEngine(options: NotifyEngineOptions): NotifyEngine {
       persist(state => addCompletedItem(state, sessionId, title))
       ensureTray()
     },
+    setFocused(next) {
+      focused = next
+      writeLog(next ? "focus=true" : "focus=false")
+    },
+    isFocused() {
+      return focused
+    },
   }
 }
+
 

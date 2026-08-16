@@ -1,7 +1,7 @@
 const STYLE_ID = 'dsh-notify-settings'
 
 const CSS_TEXT = `
-.dsh-nt{box-sizing:border-box;width:min(100%,760px);margin:0 auto;padding:4px 2px 48px;color:var(--dsw-alias-label-primary)}
+.dsh-nt{box-sizing:border-box;width:min(100%,760px);margin:0 auto;padding:4px 2px 48px;color:var(--dsw-alias-label-primary)}.dsh-nt-card{border:1px solid var(--dsw-alias-border-l2);border-radius:16px;background:var(--dsw-alias-bg-layer-2);overflow:hidden;margin:8px 0 20px}.dsh-nt-card .dsh-nt-row{padding:16px 18px}.dsh-nt-card .dsh-nt-row:first-child{border-top:0}
 .dsh-nt-intro{margin:0 0 8px;color:var(--dsw-alias-label-tertiary);font-size:13px;line-height:1.6}
 .dsh-nt-error{margin:8px 0 0;color:var(--dsw-alias-state-error-primary);font-size:12px;line-height:18px}
 .dsh-nt-row{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;padding:16px 0;border-top:1px solid var(--dsw-alias-border-l2)}
@@ -39,3 +39,4 @@ export function installNotifyStyles(): () => void {
   document.head.appendChild(tag)
   return () => tag.remove()
 }
+

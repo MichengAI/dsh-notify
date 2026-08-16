@@ -1,4 +1,5 @@
 import { NotifySection } from './NotifySection.tsx'
+import { installFocusBridge } from './focus.ts'
 
 interface ClientContext {
   slots: {
@@ -11,6 +12,7 @@ export const name = 'dsh-notify-client'
 export const inject = ['slots']
 
 export function apply(ctx: ClientContext): void {
+  installFocusBridge()
   ctx.slots.inject('settings.section', () => ctx.slots.register({
     name: 'settings.section',
     id: 'notify',

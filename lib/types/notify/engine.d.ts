@@ -23,5 +23,7 @@ export interface NotifyEngine {
     previewSound(sound: SoundId): void;
     updatePending(delta: number): void;
     markCompleted(sessionId: string, title: string): void;
+    setFocused(focused: boolean): void;
+    isFocused(): boolean;
 }
 export declare function createNotifyEngine(options: NotifyEngineOptions): NotifyEngine;

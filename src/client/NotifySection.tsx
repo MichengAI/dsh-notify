@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState, type ReactElement } from 'react'
 import { Button, Menu } from '@deepseek-ai/dsh-client-ui-primitives'
-import { createDefaultConfig, type NotifyConfig, type SoundId } from '../config.ts'
+import { createDefaultConfig, type CompleteWhen, type NotifyConfig, type SoundId } from '../config.ts'
 import { fetchNotifyConfig, patchNotifyConfig, previewNotifySound, type SoundOption } from './api.ts'
-import { intensityOf, patchFromIntensity, type NotifyIntensity } from './intensity.ts'
 import { installNotifyStyles } from './styles.ts'
 
 const FALLBACK_SOUNDS: SoundOption[] = [
@@ -12,10 +11,10 @@ const FALLBACK_SOUNDS: SoundOption[] = [
   { id: 'crisp', label: '清脆' },
 ]
 
-const INTENSITY: Array<{ id: NotifyIntensity; label: string }> = [
-  { id: 'badge', label: '仅角标' },
-  { id: 'banner', label: '弹窗' },
-  { id: 'full', label: '弹窗和声音' },
+const COMPLETE_OPTIONS: Array<{ id: CompleteWhen; label: string }> = [
+  { id: 'always', label: '始终提醒' },
+  { id: 'unfocused', label: '仅在未聚焦时' },
+  { id: 'off', label: '关闭' },
 ]
 
 function Field(props: {
@@ -35,24 +34,24 @@ function Field(props: {
   )
 }
 
-function SoundPicker(props: {
-  value: SoundId
-  sounds: SoundOption[]
-  disabled: boolean
-  onChange: (sound: SoundId) => void
+function Picker(props: {
+  value: string
+  options: Array<{ id: string; label: string }>
+  disabled?: boolean
+  onChange: (id: string) => void
 }): ReactElement {
   const [open, setOpen] = useState(false)
-  const current = props.sounds.find(item => item.id === props.value)?.label ?? '选择音色'
+  const current = props.options.find(item => item.id === props.value)?.label ?? '请选择'
   return (
     <Menu
-      open={open && !props.disabled}
+      open={open && props.disabled !== true}
       portal
       align="end"
       compact
       selectedId={props.value}
-      items={props.sounds.map(item => ({ id: item.id, label: item.label }))}
+      items={props.options.map(item => ({ id: item.id, label: item.label }))}
       onSelect={(id: string) => {
-        props.onChange(id as SoundId)
+        props.onChange(id)
         setOpen(false)
       }}
       onClose={() => setOpen(false)}
@@ -60,7 +59,7 @@ function SoundPicker(props: {
         <button
           type="button"
           className="dsh-nt-picker"
-          disabled={props.disabled}
+          disabled={props.disabled === true}
           aria-haspopup="listbox"
           aria-expanded={open}
           onClick={() => setOpen(value => !value)}
@@ -116,74 +115,54 @@ export function NotifySection(): ReactElement {
     }
   }, [config.sound])
 
-  const intensity = intensityOf(config)
-
   return (
     <div className="dsh-nt">
-      <p className="dsh-nt-intro">把完成和提问收成一组本机提醒。改完立刻生效。</p>
+      <p className="dsh-nt-intro">按类型分别决定：回合结束、权限批准、还是需要你回答问题。</p>
       {error ? <div className="dsh-nt-error">{error}</div> : null}
       {loading ? <p className="dsh-nt-hint">加载中…</p> : (
         <>
-          <Field label="本机提醒" hint="关掉后不再弹窗、不响铃，托盘也不再累计。">
-            <button
-              type="button"
-              className={config.enabled ? 'dsh-nt-switch is-on' : 'dsh-nt-switch'}
-              role="switch"
-              aria-checked={config.enabled}
-              onClick={() => void update({ enabled: !config.enabled })}
-            />
-          </Field>
-
-          <Field
-            label="提醒强度"
-            hint="需要决策时始终会抬升角标。任务完成按这里的强度处理。"
-            dim={!config.enabled}
-          >
-            <div className="dsh-nt-seg" role="radiogroup" aria-label="提醒强度">
-              {INTENSITY.map(item => (
-                <button
-                  key={item.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={intensity === item.id}
-                  className={intensity === item.id ? 'is-on' : ''}
-                  disabled={!config.enabled}
-                  onClick={() => void update(patchFromIntensity(item.id))}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          </Field>
-
-          <Field
-            label="提示音色"
-            hint="试听不受提醒强度影响，方便先选好听的。"
-            dim={!config.enabled}
-          >
-            <>
-              <SoundPicker
-                value={config.sound}
-                sounds={sounds}
-                disabled={!config.enabled}
-                onChange={sound => void update({ sound })}
+          <div className="dsh-nt-card">
+            <Field label="轮次完成通知" hint="根 Agent 回合结束后何时提醒你。">
+              <Picker
+                value={config.channels.complete}
+                options={COMPLETE_OPTIONS}
+                onChange={id => void update({ channels: { ...config.channels, complete: id as CompleteWhen } })}
               />
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={!config.enabled || previewing}
-                onClick={() => void preview()}
-              >
+            </Field>
+            <Field label="启用权限通知" hint="需要批准工具或计划时提醒。">
+              <button
+                type="button"
+                className={config.channels.permission ? 'dsh-nt-switch is-on' : 'dsh-nt-switch'}
+                role="switch"
+                aria-checked={config.channels.permission}
+                onClick={() => void update({ channels: { ...config.channels, permission: !config.channels.permission } })}
+              />
+            </Field>
+            <Field label="启用提问通知" hint="需要你选择或输入后才能继续时提醒。">
+              <button
+                type="button"
+                className={config.channels.question ? 'dsh-nt-switch is-on' : 'dsh-nt-switch'}
+                role="switch"
+                aria-checked={config.channels.question}
+                onClick={() => void update({ channels: { ...config.channels, question: !config.channels.question } })}
+              />
+            </Field>
+          </div>
+
+          <Field label="提示音色" hint="弹窗提醒时使用的声音。">
+            <>
+              <Picker
+                value={config.sound}
+                options={sounds.map(item => ({ id: item.id, label: item.label }))}
+                onChange={id => void update({ sound: id as SoundId })}
+              />
+              <Button variant="outline" size="sm" disabled={previewing} onClick={() => void preview()}>
                 {previewing ? '播放中' : '试听'}
               </Button>
             </>
           </Field>
 
-          <Field
-            label="安静时段"
-            hint="这段时间只记角标，不弹窗、不响铃。"
-            dim={!config.enabled}
-          >
+          <Field label="安静时段" hint="这段时间只记角标，不弹窗、不响铃。">
             <>
               {config.quietHours.enabled ? (
                 <div className="dsh-nt-times">
@@ -209,7 +188,6 @@ export function NotifySection(): ReactElement {
                 className={config.quietHours.enabled ? 'dsh-nt-switch is-on' : 'dsh-nt-switch'}
                 role="switch"
                 aria-checked={config.quietHours.enabled}
-                disabled={!config.enabled}
                 onClick={() => void update({
                   quietHours: { ...config.quietHours, enabled: !config.quietHours.enabled },
                 })}
@@ -217,32 +195,22 @@ export function NotifySection(): ReactElement {
             </>
           </Field>
 
-          <Field
-            label="跟随系统勿扰"
-            hint="专注助手打开时自动静音。"
-            dim={!config.enabled}
-          >
+          <Field label="跟随系统勿扰" hint="专注助手打开时自动静音。">
             <button
               type="button"
               className={config.respectSystemDnd ? 'dsh-nt-switch is-on' : 'dsh-nt-switch'}
               role="switch"
               aria-checked={config.respectSystemDnd}
-              disabled={!config.enabled}
               onClick={() => void update({ respectSystemDnd: !config.respectSystemDnd })}
             />
           </Field>
 
-          <Field
-            label="合并连续完成"
-            hint="几秒内的多次完成收成一条。"
-            dim={!config.enabled || intensity === 'badge'}
-          >
+          <Field label="合并连续完成" hint="几秒内的多次完成收成一条。">
             <button
               type="button"
               className={config.completeMerge ? 'dsh-nt-switch is-on' : 'dsh-nt-switch'}
               role="switch"
               aria-checked={config.completeMerge}
-              disabled={!config.enabled || intensity === 'badge'}
               onClick={() => void update({ completeMerge: !config.completeMerge })}
             />
           </Field>
@@ -251,4 +219,3 @@ export function NotifySection(): ReactElement {
     </div>
   )
 }
-

@@ -1,5 +1,7 @@
-import { readSessionTitle } from './session.ts'
+import type { NotifyConfig } from './config.ts'
 import type { NotifyEngine } from './notify/engine.ts'
+import { classifyAsk, shouldNotifyAsk } from './policy.ts'
+import { readSessionTitle } from './session.ts'
 
 interface AskRequest {
   questions?: Array<{
@@ -39,6 +41,7 @@ function optionSummary(question: NonNullable<AskRequest['questions']>[number]): 
 export function wrapUserQuestions(
   ctx: { get(name: string): unknown; logger: { warn(message: string): void } },
   engine: NotifyEngine,
+  getConfig: () => NotifyConfig,
 ): (() => void) | null {
   const service = ctx.get('userQuestions') as UserQuestionsService | undefined
   if (service === undefined || typeof service.ask !== 'function' || service.ask.__dshNotifyWrapped === true) {
@@ -48,17 +51,21 @@ export function wrapUserQuestions(
   const wrapped = async function wrappedAsk(this: unknown, request: AskRequest): Promise<unknown> {
     const questions = Array.isArray(request?.questions) ? request.questions : []
     const first = questions[0]
+    let notified = false
     if (first !== undefined) {
       try {
-        const sessionTitle = readSessionTitle(request.agent?.session as { title?: unknown; events?: unknown })
-        const isPlan = first.intent?.kind === 'plan-review'
-        const title = `${isPlan ? 'DSH 计划等待审批' : 'DSH 需要你的决定'}${sessionTitle ? ` · ${sessionTitle}` : ''}`
-        engine.updatePending(1)
-        engine.showToast({
-          title,
-          message: firstQuestionText(first),
-          detail: optionSummary(first),
-        })
+        const kind = classifyAsk(first.intent?.kind)
+        if (shouldNotifyAsk(getConfig(), kind)) {
+          const sessionTitle = readSessionTitle(request.agent?.session as { title?: unknown; events?: unknown })
+          const title = `${kind === 'permission' ? 'DSH 需要权限' : 'DSH 需要你的决定'}${sessionTitle ? ` · ${sessionTitle}` : ''}`
+          engine.updatePending(1)
+          notified = true
+          engine.showToast({
+            title,
+            message: firstQuestionText(first),
+            detail: optionSummary(first),
+          })
+        }
       } catch (error) {
         ctx.logger.warn(`提问提醒失败：${String((error as Error).message ?? error)}`)
       }
@@ -66,7 +73,7 @@ export function wrapUserQuestions(
     try {
       return await original.call(this, request)
     } finally {
-      if (first !== undefined) engine.updatePending(-1)
+      if (notified) engine.updatePending(-1)
     }
   }
   wrapped.__dshNotifyWrapped = true

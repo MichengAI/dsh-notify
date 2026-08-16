@@ -2,6 +2,8 @@ export declare const SOUND_IDS: readonly ["soft", "brisk", "calm", "crisp"];
 export type SoundId = (typeof SOUND_IDS)[number];
 export declare const COMPLETE_MODES: readonly ["toast", "badge-only"];
 export type CompleteMode = (typeof COMPLETE_MODES)[number];
+export declare const COMPLETE_WHEN: readonly ["always", "unfocused", "off"];
+export type CompleteWhen = (typeof COMPLETE_WHEN)[number];
 export declare const TIME_PATTERN: RegExp;
 export declare const COMPLETE_MERGE_MS = 5000;
 export declare const DEFAULT_MIN_INTERVAL_MS = 2500;
@@ -14,6 +16,11 @@ export interface QuietHoursConfig {
     start: string;
     end: string;
 }
+export interface NotifyChannels {
+    complete: CompleteWhen;
+    permission: boolean;
+    question: boolean;
+}
 export interface NotifyConfig {
     enabled: boolean;
     sound: SoundId;
@@ -22,7 +29,9 @@ export interface NotifyConfig {
     respectSystemDnd: boolean;
     completeMode: CompleteMode;
     completeMerge: boolean;
+    channels: NotifyChannels;
 }
+export declare function createDefaultChannels(): NotifyChannels;
 export declare function createDefaultConfig(): NotifyConfig;
 export declare function normalizeConfig(raw: unknown): NotifyConfig;
 export declare function mergeConfig(current: NotifyConfig, patch: unknown): NotifyConfig;

@@ -89,5 +89,20 @@ export function registerNotifyRoutes(options: {
     },
   })
 
-  return [disposeConfig, disposePreview]
+  const disposeFocus = options.webServer.register({
+    kind: 'exact',
+    path: `${API_PREFIX}/focus`,
+    handler: async (req, res) => {
+      try {
+        const parsed = await readJsonBody(req) as { focused?: unknown }
+        options.engine.setFocused(parsed.focused === true)
+        sendJson(res, 200, { ok: true, focused: options.engine.isFocused() })
+      } catch (error) {
+        sendJson(res, 400, { ok: false, error: String((error as Error).message ?? error) })
+      }
+    },
+  })
+
+  return [disposeConfig, disposePreview, disposeFocus]
 }
+
