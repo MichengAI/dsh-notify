@@ -12,6 +12,7 @@ import {
   type NotifyConfig,
 } from './config.ts'
 import { createNotifyEngine } from './notify/engine.ts'
+import { openNotifyStore } from './notify/store.ts'
 import { shouldNotifyAsk, shouldNotifyComplete } from './policy.ts'
 import { wrapUserQuestions } from './questions.ts'
 import { registerNotifyRoutes, type SettingsScopeLike } from './routes.ts'
@@ -26,7 +27,7 @@ import {
 } from './session.ts'
 
 export const name = '@michengai/dsh-notify'
-export const inject = ['userQuestions']
+export const inject = ['userQuestions', 'storageDomain']
 export const Config = Schema.object({})
 
 const COMPLETE_SETTLE_MS = 400
@@ -78,6 +79,18 @@ export function apply(ctx: Context): void {
     },
     configProvider: getConfig,
     logger: ctx.logger,
+  })
+
+  void openNotifyStore({
+    stateDir,
+    storageDomain: ctx.storageDomain,
+    logger: ctx.logger,
+  }).then(store => {
+    engine.attachStore(store)
+    ctx.effect(() => () => { void store.close() }, 'dsh-notify: 关闭领域存储')
+    engine.log('notify store ready')
+  }).catch(error => {
+    ctx.logger.warn(`通知领域存储打开失败：${String((error as Error).message ?? error)}`)
   })
 
   ctx.inject(['settings'], sctx => {
@@ -265,11 +278,6 @@ async function setupSettings(ctx: Context): Promise<SettingsScopeLike | null> {
   if (settings === undefined) return null
 
   const schema = Schema.object({
-    quietHours: Schema.object({
-      enabled: Schema.boolean().default(false),
-      start: Schema.string().default('22:00'),
-      end: Schema.string().default('08:00'),
-    }).default({ enabled: false, start: '22:00', end: '08:00' }),
     respectSystemDnd: Schema.boolean().default(true),
     completeMerge: Schema.boolean().default(true),
     channels: Schema.object({

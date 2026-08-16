@@ -10,6 +10,12 @@ declare module '@deepseek-ai/cordis' {
     on(name: string, listener: (...args: any[]) => any, options?: { global?: boolean; prepend?: boolean }): () => void
     get(name: string): unknown
     inject(deps: string[], callback: (ctx: Context) => void): void
+    readonly storageDomain: {
+      open(spec: unknown): Promise<{
+        readonly global?: { get(): unknown; set(value: unknown): Promise<void> }
+        close(): Promise<void>
+      }>
+    }
   }
 }
 

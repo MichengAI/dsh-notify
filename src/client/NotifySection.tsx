@@ -126,39 +126,6 @@ export function NotifySection(): ReactElement {
               />
             </Field>
 
-          <Field label="安静时段" hint="这段时间只记角标，不弹窗、不响铃。">
-            <>
-              {config.quietHours.enabled ? (
-                <div className="dsh-nt-times">
-                  <input
-                    type="time"
-                    value={config.quietHours.start}
-                    onChange={event => void update({
-                      quietHours: { ...config.quietHours, start: event.target.value },
-                    })}
-                  />
-                  <span className="dsh-nt-hint">至</span>
-                  <input
-                    type="time"
-                    value={config.quietHours.end}
-                    onChange={event => void update({
-                      quietHours: { ...config.quietHours, end: event.target.value },
-                    })}
-                  />
-                </div>
-              ) : null}
-              <button
-                type="button"
-                className={config.quietHours.enabled ? 'dsh-nt-switch is-on' : 'dsh-nt-switch'}
-                role="switch"
-                aria-checked={config.quietHours.enabled}
-                onClick={() => void update({
-                  quietHours: { ...config.quietHours, enabled: !config.quietHours.enabled },
-                })}
-              />
-            </>
-          </Field>
-
           <Field label="跟随系统勿扰" hint="专注助手打开时自动静音。">
             <button
               type="button"

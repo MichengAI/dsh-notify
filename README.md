@@ -28,7 +28,7 @@
 - Sends a Windows toast when the root Agent returns from `running` to `idle`.
 - Wraps `userQuestions.ask` so plan reviews and decision prompts also raise a toast.
 - Shows a tray badge for unanswered questions plus completed sessions that have not been opened yet.
-- Uses the Windows default notification sound. Quiet hours and Focus Assist are optional.
+- Uses the Windows default notification sound. Focus Assist is optional.
 - Installs as a native DSH profile plugin. It does not patch built-in DeepSeek packages.
 
 ## Prerequisites
@@ -81,7 +81,6 @@ Open **Settings → Notifications**, then use the panel as follows:
 | Turn completion alerts | Choose **Always**, **Only when unfocused**, or **Off**. | Root-agent completion |
 | Permission alerts | Toggle **Enable permission notifications**. | Tool and plan approval |
 | Question alerts | Toggle **Enable question notifications**. | Decisions that block progress |
-| Quiet hours | Enable the schedule and set start/end times. | Toasts during that window |
 | Follow Focus Assist | Toggle **Follow system Do Not Disturb**. | System Focus Assist |
 | Merge completions | Combine finishes that arrive within a few seconds. | Completion toasts |
 
@@ -111,7 +110,7 @@ This repository keeps TypeScript in `src` and builds to `lib`:
 - [src\index.ts](src/index.ts): host plugin, settings registration, and HTTP routes.
 - [src\client\index.ts](src/client/index.ts): Settings → Notifications section.
 - [scripts\toast.ps1](scripts/toast.ps1) and [scripts\tray.ps1](scripts/tray.ps1): Windows toast and tray helpers.
-- `tests\*.test.ts`: config, quiet hours, session helpers, and package-contract checks.
+- `tests\*.test.ts`: config, session helpers, and package-contract checks.
 
 After changing the source, test, rebuild, and install from the local directory:
 

@@ -9,7 +9,7 @@ import {
 } from '../config.ts'
 import { resolveScriptsDir } from '../paths.ts'
 import { spawnHiddenPowerShell } from './powershell.ts'
-import { isInQuietHours } from './quiet-hours.ts'
+import type { NotifyStore } from './store.ts'
 import {
   addCompletedItem,
   readTrayState,
@@ -29,7 +29,6 @@ export interface ToastRequest {
   title?: string
   message?: string
   detail?: string
-  ignoreQuiet?: boolean
 }
 
 interface CompleteBufferItem {
@@ -46,6 +45,7 @@ export interface NotifyEngine {
   setFocused(focused: boolean): void
   isFocused(): boolean
   log(message: string): void
+  attachStore(store: NotifyStore): void
 }
 
 export function createNotifyEngine(options: NotifyEngineOptions): NotifyEngine {
@@ -59,6 +59,7 @@ export function createNotifyEngine(options: NotifyEngineOptions): NotifyEngine {
   let trayStarted = false
   let completeBuffer: CompleteBufferItem[] = []
   let completeTimer: ReturnType<typeof setTimeout> | null = null
+  let store: NotifyStore | undefined
 
   const writeLog = (message: string): void => {
     try {
@@ -75,7 +76,14 @@ export function createNotifyEngine(options: NotifyEngineOptions): NotifyEngine {
   }
 
   const persist = (mutator: (state: ReturnType<typeof readTrayState>) => ReturnType<typeof readTrayState>): void => {
-    writeTrayState(options.stateDir, mutator(readTrayState(options.stateDir)))
+    const current = store?.read() ?? readTrayState(options.stateDir)
+    const next = mutator(current)
+    writeTrayState(options.stateDir, next)
+    if (store !== undefined) {
+      void store.write(next).catch(error => {
+        warn(`领域存储写入失败：${String((error as Error).message ?? error)}`)
+      })
+    }
   }
 
   const ensureTray = (): void => {
@@ -108,8 +116,6 @@ export function createNotifyEngine(options: NotifyEngineOptions): NotifyEngine {
     const now = Date.now()
     if (now - lastToastAt < minIntervalMs) return
     lastToastAt = now
-    const quiet = !request.ignoreQuiet && isInQuietHours(config.quietHours)
-    if (quiet) return
     if (!existsSync(toastScript)) {
       throw new Error(`找不到 Toast 脚本：${toastScript}`)
     }
@@ -184,9 +190,10 @@ export function createNotifyEngine(options: NotifyEngineOptions): NotifyEngine {
     log(message) {
       writeLog(message)
     },
+    attachStore(next) {
+      store = next
+      writeTrayState(options.stateDir, next.read())
+      writeLog('domain store attached')
+    },
   }
 }
-
-
-
-

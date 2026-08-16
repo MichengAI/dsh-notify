@@ -1,4 +1,5 @@
 import { type NotifyConfig } from '../config.ts';
+import type { NotifyStore } from './store.ts';
 export interface NotifyEngineOptions {
     stateDir: string;
     portProvider: () => number;
@@ -12,7 +13,6 @@ export interface ToastRequest {
     title?: string;
     message?: string;
     detail?: string;
-    ignoreQuiet?: boolean;
 }
 export interface NotifyEngine {
     showToast(request?: ToastRequest): void;
@@ -22,5 +22,6 @@ export interface NotifyEngine {
     setFocused(focused: boolean): void;
     isFocused(): boolean;
     log(message: string): void;
+    attachStore(store: NotifyStore): void;
 }
 export declare function createNotifyEngine(options: NotifyEngineOptions): NotifyEngine;
