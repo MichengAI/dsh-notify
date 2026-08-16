@@ -34,7 +34,7 @@ test('提示音为自制 RIFF/WAVE', () => {
 })
 
 test('PowerShell 脚本带 UTF-8 BOM', () => {
-  for (const rel of ['scripts/toast.ps1', 'scripts/tray.ps1', 'scripts/install.ps1', 'scripts/uninstall.ps1', 'install.ps1', 'uninstall.ps1']) {
+  for (const rel of ['scripts/toast.ps1', 'scripts/tray.ps1', 'scripts/play.ps1', 'scripts/install.ps1', 'scripts/uninstall.ps1', 'install.ps1', 'uninstall.ps1']) {
     const bytes = readFileSync(path.join(ROOT, rel))
     assert.equal(bytes[0], 0xef)
     assert.equal(bytes[1], 0xbb)
@@ -46,3 +46,4 @@ test('交接文档存在', () => {
   assert.equal(existsSync(path.join(ROOT, 'docs', '00-交接入口', '00-阅读导航.md')), true)
   assert.equal(existsSync(path.join(ROOT, 'docs', '01-当前工作', 'I001-插件初始化', '00-迭代总览.md')), true)
 })
+

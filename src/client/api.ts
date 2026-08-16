@@ -3,7 +3,7 @@ import { API_PREFIX, type NotifyConfig, type SoundId } from '../config.ts'
 export interface SoundOption {
   id: SoundId
   label: string
-  desc: string
+  desc?: string
 }
 
 export interface ConfigPayload {
@@ -43,3 +43,4 @@ export async function previewNotifySound(sound: SoundId): Promise<void> {
     body: JSON.stringify({ sound }),
   }))
 }
+

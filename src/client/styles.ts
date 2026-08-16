@@ -14,15 +14,16 @@ const CSS_TEXT = `
 .dsh-nt-switch:after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .16s ease}
 .dsh-nt-switch.is-on{background:var(--dsw-alias-brand-primary)}
 .dsh-nt-switch.is-on:after{transform:translateX(18px)}
-.dsh-nt-seg{display:inline-flex;padding:3px;border-radius:10px;background:var(--dsw-alias-interactive-bg-hover)}
-.dsh-nt-seg button{appearance:none;min-width:72px;height:28px;padding:0 10px;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:12px;cursor:pointer}
-.dsh-nt-seg button.is-on{background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font-weight:600}
-.dsh-nt-select{appearance:none;height:32px;min-width:148px;padding:0 28px 0 10px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-bg-layer-3) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%2381858C' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 10px center;color:var(--dsw-alias-label-primary);font:inherit;font-size:13px}
-.dsh-nt-select:focus{border-color:var(--dsw-alias-brand-primary);outline:none}
-.dsh-nt-select:disabled{opacity:.5}
-.dsh-nt-ghost{appearance:none;height:32px;padding:0 12px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:transparent;color:var(--dsw-alias-label-primary);font:inherit;font-size:12px;cursor:pointer}
-.dsh-nt-ghost:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}
-.dsh-nt-ghost:disabled{opacity:.5;cursor:default}
+.dsh-nt-switch:disabled{opacity:.4;cursor:default}
+.dsh-nt-seg{display:inline-flex;padding:3px;border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:var(--dsw-alias-bg-layer-3)}
+.dsh-nt-seg button{appearance:none;min-width:76px;height:30px;padding:0 12px;border:0;border-radius:9px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:12px;line-height:18px;cursor:pointer}
+.dsh-nt-seg button:hover:not(:disabled){color:var(--dsw-alias-label-primary)}
+.dsh-nt-seg button.is-on{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary);font-weight:600;box-shadow:inset 0 0 0 1px var(--dsw-alias-border-l2)}
+.dsh-nt-seg button:disabled{opacity:.45;cursor:default}
+.dsh-nt-picker{display:inline-flex;align-items:center;justify-content:space-between;gap:10px;min-width:148px;height:32px;padding:0 10px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;cursor:pointer}
+.dsh-nt-picker:hover:not(:disabled){border-color:var(--dsw-alias-label-dimmed)}
+.dsh-nt-picker:disabled{opacity:.45;cursor:default}
+.dsh-nt-caret{width:8px;height:8px;border-right:1.5px solid var(--dsw-alias-label-tertiary);border-bottom:1.5px solid var(--dsw-alias-label-tertiary);transform:rotate(45deg) translateY(-2px)}
 .dsh-nt-times{display:flex;align-items:center;gap:8px}
 .dsh-nt-times input{box-sizing:border-box;width:108px;height:32px;padding:0 8px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px}
 .dsh-nt-times input:focus{border-color:var(--dsw-alias-brand-primary);outline:none}

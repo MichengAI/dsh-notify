@@ -2,7 +2,7 @@ import { type NotifyConfig, type SoundId } from '../config.ts';
 export interface SoundOption {
     id: SoundId;
     label: string;
-    desc: string;
+    desc?: string;
 }
 export interface ConfigPayload {
     ok: boolean;

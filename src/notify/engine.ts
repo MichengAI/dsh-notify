@@ -53,6 +53,7 @@ export interface NotifyEngine {
 
 export function createNotifyEngine(options: NotifyEngineOptions): NotifyEngine {
   const toastScript = path.join(resolveScriptsDir(), 'toast.ps1')
+  const playScript = path.join(resolveScriptsDir(), 'play.ps1')
   const trayScript = path.join(resolveScriptsDir(), 'tray.ps1')
   const logFile = path.join(options.stateDir, 'debug.log')
   const minIntervalMs = readMinIntervalMs()
@@ -175,14 +176,14 @@ export function createNotifyEngine(options: NotifyEngineOptions): NotifyEngine {
       if (!existsSync(soundPath)) {
         throw new Error(`找不到提示音文件：${preset.file}`)
       }
-      showToast({
-        title: 'DSH 提示音试听',
-        message: preset.label + ' · ' + preset.desc,
-        sound,
-        soundOn: true,
-        ignoreQuiet: true,
-        force: true,
+      if (!existsSync(playScript)) {
+        throw new Error('找不到试听脚本 play.ps1')
+      }
+      const child = spawnHiddenPowerShell(playScript, { sound: soundPath, logFile })
+      child.once('error', error => {
+        throw new Error(`试听启动失败：${String((error as Error).message ?? error)}`)
       })
+      writeLog(`preview spawn pid=${child.pid ?? '?'} sound=${soundPath}`)
     },
     updatePending(delta) {
       persist(state => shiftPending(state, delta))
@@ -194,3 +195,4 @@ export function createNotifyEngine(options: NotifyEngineOptions): NotifyEngine {
     },
   }
 }
+

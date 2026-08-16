@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useState, type ReactElement } from 'react'
-import { TIME_PATTERN, createDefaultConfig, type NotifyConfig, type SoundId } from '../config.ts'
+import { Button, Menu } from '@deepseek-ai/dsh-client-ui-primitives'
+import { createDefaultConfig, type NotifyConfig, type SoundId } from '../config.ts'
 import { fetchNotifyConfig, patchNotifyConfig, previewNotifySound, type SoundOption } from './api.ts'
-import { intensityOf, isSoundId, patchFromIntensity, type NotifyIntensity } from './intensity.ts'
+import { intensityOf, patchFromIntensity, type NotifyIntensity } from './intensity.ts'
 import { installNotifyStyles } from './styles.ts'
 
 const FALLBACK_SOUNDS: SoundOption[] = [
-  { id: 'soft', label: '柔和', desc: '低音双击' },
-  { id: 'brisk', label: '轻快', desc: '三连上行' },
-  { id: 'calm', label: '舒缓', desc: '低八度长音' },
-  { id: 'crisp', label: '清脆', desc: '高音短促' },
+  { id: 'soft', label: '柔和' },
+  { id: 'brisk', label: '轻快' },
+  { id: 'calm', label: '舒缓' },
+  { id: 'crisp', label: '清脆' },
 ]
 
 const INTENSITY: Array<{ id: NotifyIntensity; label: string }> = [
@@ -34,6 +35,44 @@ function Field(props: {
   )
 }
 
+function SoundPicker(props: {
+  value: SoundId
+  sounds: SoundOption[]
+  disabled: boolean
+  onChange: (sound: SoundId) => void
+}): ReactElement {
+  const [open, setOpen] = useState(false)
+  const current = props.sounds.find(item => item.id === props.value)?.label ?? '选择音色'
+  return (
+    <Menu
+      open={open && !props.disabled}
+      portal
+      align="end"
+      compact
+      selectedId={props.value}
+      items={props.sounds.map(item => ({ id: item.id, label: item.label }))}
+      onSelect={(id: string) => {
+        props.onChange(id as SoundId)
+        setOpen(false)
+      }}
+      onClose={() => setOpen(false)}
+      anchor={(
+        <button
+          type="button"
+          className="dsh-nt-picker"
+          disabled={props.disabled}
+          aria-haspopup="listbox"
+          aria-expanded={open}
+          onClick={() => setOpen(value => !value)}
+        >
+          <span>{current}</span>
+          <span className="dsh-nt-caret" aria-hidden="true" />
+        </button>
+      )}
+    />
+  )
+}
+
 export function NotifySection(): ReactElement {
   const [config, setConfig] = useState<NotifyConfig>(createDefaultConfig())
   const [sounds, setSounds] = useState<SoundOption[]>(FALLBACK_SOUNDS)
@@ -47,7 +86,9 @@ export function NotifySection(): ReactElement {
     void fetchNotifyConfig()
       .then(payload => {
         if (payload.config) setConfig(payload.config)
-        if (payload.sounds && payload.sounds.length > 0) setSounds(payload.sounds)
+        if (payload.sounds && payload.sounds.length > 0) {
+          setSounds(payload.sounds.map(item => ({ id: item.id, label: item.label.replace('（默认）', '') })))
+        }
       })
       .catch(err => setError(String((err as Error).message ?? err)))
       .finally(() => setLoading(false))
@@ -76,7 +117,6 @@ export function NotifySection(): ReactElement {
   }, [config.sound])
 
   const intensity = intensityOf(config)
-  const soundUsable = config.enabled && intensity === 'full'
 
   return (
     <div className="dsh-nt">
@@ -118,32 +158,24 @@ export function NotifySection(): ReactElement {
 
           <Field
             label="提示音色"
-            hint="只在「弹窗和声音」时播放。"
-            dim={!soundUsable}
+            hint="试听不受提醒强度影响，方便先选好听的。"
+            dim={!config.enabled}
           >
             <>
-              <select
-                className="dsh-nt-select"
+              <SoundPicker
                 value={config.sound}
-                disabled={!soundUsable}
-                onChange={event => {
-                  if (isSoundId(event.target.value, sounds.map(item => item.id))) {
-                    void update({ sound: event.target.value })
-                  }
-                }}
-              >
-                {sounds.map(sound => (
-                  <option key={sound.id} value={sound.id}>{sound.label}</option>
-                ))}
-              </select>
-              <button
-                type="button"
-                className="dsh-nt-ghost"
-                disabled={!soundUsable || previewing}
+                sounds={sounds}
+                disabled={!config.enabled}
+                onChange={sound => void update({ sound })}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!config.enabled || previewing}
                 onClick={() => void preview()}
               >
                 {previewing ? '播放中' : '试听'}
-              </button>
+              </Button>
             </>
           </Field>
 
@@ -219,3 +251,4 @@ export function NotifySection(): ReactElement {
     </div>
   )
 }
+
