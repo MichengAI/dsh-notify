@@ -15,7 +15,7 @@ import { createNotifyEngine } from './notify/engine.ts'
 import { shouldNotifyAsk, shouldNotifyComplete } from './policy.ts'
 import { wrapUserQuestions } from './questions.ts'
 import { registerNotifyRoutes, type SettingsScopeLike } from './routes.ts'
-import { isGoalAutoContinuing, isRootAgent, readAssistantSnippet, readSessionTitle } from './session.ts'
+import { isGoalAutoContinuing, isRootAgent, readAssistantSnippet, readSessionTitle, seedAgentStatuses } from './session.ts'
 
 export const name = '@michengai/dsh-notify'
 export const inject = ['userQuestions']
@@ -69,19 +69,24 @@ export function apply(ctx: Context): void {
     })
   })
 
-  const lastStatus = new Map<unknown, string>()
-  ctx.on('agent/status', ({ agent, status }: { agent: { id?: unknown; session?: unknown }; status: string }) => {
+  const lastStatus = seedAgentStatuses(ctx)
+  ctx.on('agent/status', (payload: { agent?: { id?: unknown; session?: unknown }; status?: string }) => {
     try {
-      const previous = lastStatus.get(agent) ?? 'idle'
-      lastStatus.set(agent, status)
-      if (status !== 'idle' || previous === 'idle') return
+      const agent = payload?.agent
+      const status = payload?.status
+      if (status !== 'idle' && status !== 'running') return
+      const id = String(agent?.id ?? '')
+      const key = id !== '' ? id : 'unknown'
+      const previous = lastStatus.get(key) ?? 'idle'
+      lastStatus.set(key, status)
+      if (status !== 'idle' || previous !== 'running') return
       if (!isRootAgent(ctx, agent)) return
       if (isGoalAutoContinuing(ctx, agent)) return
-      const session = agent.session as { title?: unknown; events?: unknown } | undefined
+      if (!shouldNotifyComplete(getConfig(), engine.isFocused())) return
+      const session = agent?.session as { title?: unknown; events?: unknown } | undefined
       const title = readSessionTitle(session)
       const snippet = readAssistantSnippet(session, 100)
-      if (!shouldNotifyComplete(getConfig(), engine.isFocused())) return
-      engine.markCompleted(String(agent.id ?? ''), title ?? '')
+      engine.markCompleted(key, title ?? '')
       engine.notifyComplete(
         title ?? '',
         title !== undefined ? `会话：${title}` : '回合结束，可以回来查看结果了',
@@ -153,10 +158,10 @@ async function setupSettings(ctx: Context): Promise<SettingsScopeLike | null> {
     respectSystemDnd: Schema.boolean().default(true),
     completeMerge: Schema.boolean().default(true),
     channels: Schema.object({
-      complete: Schema.union([Schema.const('always'), Schema.const('unfocused'), Schema.const('off')]).default('unfocused'),
+      complete: Schema.union([Schema.const('always'), Schema.const('unfocused'), Schema.const('off')]).default('always'),
       permission: Schema.boolean().default(true),
       question: Schema.boolean().default(true),
-    }).default({ complete: 'unfocused', permission: true, question: true }),
+    }).default({ complete: 'always', permission: true, question: true }),
   })
 
   if (typeof settings.register === 'function' && typeof settingsMod?.settingsNamespace === 'function') {
@@ -181,6 +186,7 @@ async function setupSettings(ctx: Context): Promise<SettingsScopeLike | null> {
 
   return null
 }
+
 
 
 

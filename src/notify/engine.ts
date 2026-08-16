@@ -54,6 +54,7 @@ export function createNotifyEngine(options: NotifyEngineOptions): NotifyEngine {
   const minIntervalMs = readMinIntervalMs()
   let lastToastAt = 0
   let focused = true
+  let focusTimer: ReturnType<typeof setTimeout> | null = null
   let trayStarted = false
   let completeBuffer: CompleteBufferItem[] = []
   let completeTimer: ReturnType<typeof setTimeout> | null = null
@@ -170,12 +171,16 @@ export function createNotifyEngine(options: NotifyEngineOptions): NotifyEngine {
       ensureTray()
     },
     setFocused(next) {
-      focused = next
-      writeLog(next ? 'focus=true' : 'focus=false')
+      if (focusTimer !== null) clearTimeout(focusTimer)
+      focusTimer = setTimeout(() => {
+        focused = next
+        writeLog(next ? 'focus=true' : 'focus=false')
+      }, 400)
     },
     isFocused() {
       return focused
     },
   }
 }
+
 

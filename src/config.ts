@@ -31,7 +31,7 @@ export interface NotifyConfig {
 
 export function createDefaultChannels(): NotifyChannels {
   return {
-    complete: 'unfocused',
+    complete: 'always',
     permission: true,
     question: true,
   }
@@ -112,3 +112,4 @@ export function readMinIntervalMs(): number {
   const parsed = Number(process.env.DSH_NOTIFY_MIN_INTERVAL_MS ?? DEFAULT_MIN_INTERVAL_MS)
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : DEFAULT_MIN_INTERVAL_MS
 }
+

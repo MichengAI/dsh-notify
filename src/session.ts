@@ -46,14 +46,29 @@ export function readAssistantSnippet(session: SessionLike | undefined, maxChars:
   return ''
 }
 
-export function isRootAgent(ctx: { get(name: string): unknown }, agent: unknown): boolean {
+export function isRootAgent(ctx: { get(name: string): unknown }, agent: { id?: unknown } | undefined): boolean {
   try {
-    const agents = ctx.get('agents') as { roots?: () => unknown[] } | undefined
+    const agents = ctx.get('agents') as { roots?: () => Array<{ id?: unknown }> } | undefined
     const roots = agents?.roots?.()
-    return !Array.isArray(roots) || roots.includes(agent)
+    if (!Array.isArray(roots) || roots.length === 0) return true
+    return roots.some(root => root === agent || (agent?.id !== undefined && root?.id === agent.id))
   } catch {
     return true
   }
+}
+
+export function seedAgentStatuses(ctx: { get(name: string): unknown }): Map<string, string> {
+  const seeded = new Map<string, string>()
+  try {
+    const agents = ctx.get('agents') as { list?: () => Array<{ id?: unknown; status?: unknown }> } | undefined
+    for (const agent of agents?.list?.() ?? []) {
+      if (agent?.id === undefined) continue
+      seeded.set(String(agent.id), agent.status === 'running' ? 'running' : 'idle')
+    }
+  } catch {
+    /* 启动快照失败时按事件自行建立 */
+  }
+  return seeded
 }
 
 export function isGoalAutoContinuing(ctx: { get(name: string): unknown }, agent: unknown): boolean {
@@ -73,3 +88,4 @@ export function isGoalAutoContinuing(ctx: { get(name: string): unknown }, agent:
     return false
   }
 }
+

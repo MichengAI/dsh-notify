@@ -4,7 +4,7 @@ import { createDefaultConfig, mergeConfig, normalizeConfig } from '../src/config
 
 test('默认配置形状稳定', () => {
   const config = createDefaultConfig()
-  assert.equal(config.channels.complete, 'unfocused')
+  assert.equal(config.channels.complete, 'always')
   assert.equal(config.quietHours.start, '22:00')
 })
 
@@ -20,9 +20,10 @@ test('非法字段回落到默认值', () => {
 test('patch 合并后仍经过规范化', () => {
   const next = mergeConfig(createDefaultConfig(), { completeMerge: false })
   assert.equal(next.completeMerge, false)
-  assert.equal(next.channels.complete, 'unfocused')
+  assert.equal(next.channels.complete, 'always')
 })
 
 test('非法 patch 直接抛错', () => {
   assert.throws(() => mergeConfig(createDefaultConfig(), null), /patch/)
 })
+
