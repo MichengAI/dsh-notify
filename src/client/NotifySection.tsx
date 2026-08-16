@@ -1,15 +1,8 @@
 import { useCallback, useEffect, useState, type ReactElement } from 'react'
-import { Button, Menu } from '@deepseek-ai/dsh-client-ui-primitives'
-import { createDefaultConfig, type CompleteWhen, type NotifyConfig, type SoundId } from '../config.ts'
-import { fetchNotifyConfig, patchNotifyConfig, previewNotifySound, type SoundOption } from './api.ts'
+import { Menu } from '@deepseek-ai/dsh-client-ui-primitives'
+import { createDefaultConfig, type CompleteWhen, type NotifyConfig } from '../config.ts'
+import { fetchNotifyConfig, patchNotifyConfig } from './api.ts'
 import { installNotifyStyles } from './styles.ts'
-
-const FALLBACK_SOUNDS: SoundOption[] = [
-  { id: 'soft', label: '柔和' },
-  { id: 'brisk', label: '轻快' },
-  { id: 'calm', label: '舒缓' },
-  { id: 'crisp', label: '清脆' },
-]
 
 const COMPLETE_OPTIONS: Array<{ id: CompleteWhen; label: string }> = [
   { id: 'always', label: '始终提醒' },
@@ -74,10 +67,8 @@ function Picker(props: {
 
 export function NotifySection(): ReactElement {
   const [config, setConfig] = useState<NotifyConfig>(createDefaultConfig())
-  const [sounds, setSounds] = useState<SoundOption[]>(FALLBACK_SOUNDS)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [previewing, setPreviewing] = useState(false)
 
   useEffect(() => installNotifyStyles(), [])
 
@@ -85,9 +76,6 @@ export function NotifySection(): ReactElement {
     void fetchNotifyConfig()
       .then(payload => {
         if (payload.config) setConfig(payload.config)
-        if (payload.sounds && payload.sounds.length > 0) {
-          setSounds(payload.sounds.map(item => ({ id: item.id, label: item.label.replace('（默认）', '') })))
-        }
       })
       .catch(err => setError(String((err as Error).message ?? err)))
       .finally(() => setLoading(false))
@@ -103,21 +91,9 @@ export function NotifySection(): ReactElement {
     }
   }, [])
 
-  const preview = useCallback(async () => {
-    setError('')
-    setPreviewing(true)
-    try {
-      await previewNotifySound(config.sound)
-    } catch (err) {
-      setError(String((err as Error).message ?? err))
-    } finally {
-      setPreviewing(false)
-    }
-  }, [config.sound])
-
   return (
     <div className="dsh-nt">
-      <p className="dsh-nt-intro">按类型分别决定：回合结束、权限批准、还是需要你回答问题。</p>
+      <p className="dsh-nt-intro">按类型分别决定：回合结束、权限批准、还是需要你回答问题。提示音使用系统默认通知音。</p>
       {error ? <div className="dsh-nt-error">{error}</div> : null}
       {loading ? <p className="dsh-nt-hint">加载中…</p> : (
         <>
@@ -148,19 +124,6 @@ export function NotifySection(): ReactElement {
               />
             </Field>
           </div>
-
-          <Field label="提示音色" hint="弹窗提醒时使用的声音。">
-            <>
-              <Picker
-                value={config.sound}
-                options={sounds.map(item => ({ id: item.id, label: item.label }))}
-                onChange={id => void update({ sound: id as SoundId })}
-              />
-              <Button variant="outline" size="sm" disabled={previewing} onClick={() => void preview()}>
-                {previewing ? '播放中' : '试听'}
-              </Button>
-            </>
-          </Field>
 
           <Field label="安静时段" hint="这段时间只记角标，不弹窗、不响铃。">
             <>

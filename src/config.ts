@@ -1,6 +1,3 @@
-export const SOUND_IDS = ['soft', 'brisk', 'calm', 'crisp'] as const
-export type SoundId = (typeof SOUND_IDS)[number]
-
 export const COMPLETE_MODES = ['toast', 'badge-only'] as const
 export type CompleteMode = (typeof COMPLETE_MODES)[number]
 
@@ -30,8 +27,6 @@ export interface NotifyChannels {
 
 export interface NotifyConfig {
   enabled: boolean
-  sound: SoundId
-  soundEnabled: boolean
   quietHours: QuietHoursConfig
   respectSystemDnd: boolean
   completeMode: CompleteMode
@@ -50,18 +45,12 @@ export function createDefaultChannels(): NotifyChannels {
 export function createDefaultConfig(): NotifyConfig {
   return {
     enabled: true,
-    sound: 'soft',
-    soundEnabled: true,
     quietHours: { enabled: false, start: '22:00', end: '08:00' },
     respectSystemDnd: true,
     completeMode: 'toast',
     completeMerge: true,
     channels: createDefaultChannels(),
   }
-}
-
-function isSoundId(value: unknown): value is SoundId {
-  return typeof value === 'string' && (SOUND_IDS as readonly string[]).includes(value)
 }
 
 function isCompleteMode(value: unknown): value is CompleteMode {
@@ -94,8 +83,6 @@ export function normalizeConfig(raw: unknown): NotifyConfig {
   if (raw === null || typeof raw !== 'object') return base
   const input = raw as Record<string, unknown>
   if (typeof input.enabled === 'boolean') base.enabled = input.enabled
-  if (isSoundId(input.sound)) base.sound = input.sound
-  if (typeof input.soundEnabled === 'boolean') base.soundEnabled = input.soundEnabled
   if (input.quietHours !== null && typeof input.quietHours === 'object') {
     const hours = input.quietHours as Record<string, unknown>
     if (typeof hours.enabled === 'boolean') base.quietHours.enabled = hours.enabled
@@ -138,3 +125,4 @@ export function readMinIntervalMs(): number {
   const parsed = Number(process.env.DSH_NOTIFY_MIN_INTERVAL_MS ?? DEFAULT_MIN_INTERVAL_MS)
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : DEFAULT_MIN_INTERVAL_MS
 }
+

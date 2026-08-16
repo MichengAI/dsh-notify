@@ -1,15 +1,8 @@
-import { API_PREFIX, type NotifyConfig, type SoundId } from '../config.ts'
-
-export interface SoundOption {
-  id: SoundId
-  label: string
-  desc?: string
-}
+import { API_PREFIX, type NotifyConfig } from '../config.ts'
 
 export interface ConfigPayload {
   ok: boolean
   config?: NotifyConfig
-  sounds?: SoundOption[]
   error?: string
 }
 
@@ -35,12 +28,3 @@ export async function patchNotifyConfig(patch: Partial<NotifyConfig>): Promise<C
     body: JSON.stringify({ patch }),
   }))
 }
-
-export async function previewNotifySound(sound: SoundId): Promise<void> {
-  await parsePayload(await fetch(`${API_PREFIX}/preview`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ sound }),
-  }))
-}
-

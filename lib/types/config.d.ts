@@ -1,5 +1,3 @@
-export declare const SOUND_IDS: readonly ["soft", "brisk", "calm", "crisp"];
-export type SoundId = (typeof SOUND_IDS)[number];
 export declare const COMPLETE_MODES: readonly ["toast", "badge-only"];
 export type CompleteMode = (typeof COMPLETE_MODES)[number];
 export declare const COMPLETE_WHEN: readonly ["always", "unfocused", "off"];
@@ -23,8 +21,6 @@ export interface NotifyChannels {
 }
 export interface NotifyConfig {
     enabled: boolean;
-    sound: SoundId;
-    soundEnabled: boolean;
     quietHours: QuietHoursConfig;
     respectSystemDnd: boolean;
     completeMode: CompleteMode;

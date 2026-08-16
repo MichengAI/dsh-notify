@@ -146,8 +146,6 @@ async function setupSettings(ctx: Context): Promise<SettingsScopeLike | null> {
 
   const schema = Schema.object({
     enabled: Schema.boolean().default(true),
-    sound: Schema.string().default('soft'),
-    soundEnabled: Schema.boolean().default(true),
     quietHours: Schema.object({
       enabled: Schema.boolean().default(false),
       start: Schema.string().default('22:00'),
@@ -185,4 +183,5 @@ async function setupSettings(ctx: Context): Promise<SettingsScopeLike | null> {
 
   return null
 }
+
 

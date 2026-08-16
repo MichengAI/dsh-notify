@@ -1,6 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import { API_PREFIX, mergeConfig, normalizeConfig, type NotifyConfig, type SoundId } from './config.ts'
-import { listSoundPresets, SOUND_PRESETS } from './notify/sounds.ts'
+import { API_PREFIX, mergeConfig, normalizeConfig, type NotifyConfig } from './config.ts'
 import type { NotifyEngine } from './notify/engine.ts'
 
 interface WebServerLike {
@@ -40,11 +39,7 @@ export function registerNotifyRoutes(options: {
     handler: async (req, res) => {
       try {
         if (req.method === 'GET') {
-          sendJson(res, 200, {
-            ok: true,
-            config: normalizeConfig(options.getConfig()),
-            sounds: listSoundPresets(),
-          })
+          sendJson(res, 200, { ok: true, config: normalizeConfig(options.getConfig()) })
           return
         }
         if (req.method === 'POST') {
@@ -56,33 +51,10 @@ export function registerNotifyRoutes(options: {
           }
           const next = mergeConfig(options.getConfig(), parsed.patch)
           await scope.replace(next)
-          sendJson(res, 200, {
-            ok: true,
-            config: normalizeConfig(scope.get()),
-            sounds: listSoundPresets(),
-          })
+          sendJson(res, 200, { ok: true, config: normalizeConfig(scope.get()) })
           return
         }
         sendJson(res, 405, { ok: false, error: '仅支持 GET / POST' })
-      } catch (error) {
-        sendJson(res, 400, { ok: false, error: String((error as Error).message ?? error) })
-      }
-    },
-  })
-
-  const disposePreview = options.webServer.register({
-    kind: 'exact',
-    path: `${API_PREFIX}/preview`,
-    handler: async (req, res) => {
-      try {
-        const parsed = await readJsonBody(req) as { sound?: unknown }
-        const sound = typeof parsed.sound === 'string' ? parsed.sound : 'soft'
-        if (!(sound in SOUND_PRESETS)) {
-          sendJson(res, 400, { ok: false, error: `未知提示音：${sound}` })
-          return
-        }
-        options.engine.previewSound(sound as SoundId)
-        sendJson(res, 200, { ok: true })
       } catch (error) {
         sendJson(res, 400, { ok: false, error: String((error as Error).message ?? error) })
       }
@@ -103,6 +75,5 @@ export function registerNotifyRoutes(options: {
     },
   })
 
-  return [disposeConfig, disposePreview, disposeFocus]
+  return [disposeConfig, disposeFocus]
 }
-

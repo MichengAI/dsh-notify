@@ -5,7 +5,7 @@
 <h1 align="center">DSH Notify</h1>
 
 <p align="center">
-  <strong>DeepSeek Harness 的 Windows 通知插件：任务完成或需要决策时弹出系统 Toast、播放提示音，并在托盘显示待处理角标。</strong>
+  <strong>DeepSeek Harness 的 Windows 通知插件：任务完成或需要决策时弹出系统 Toast，并在托盘显示待处理角标。</strong>
 </p>
 
 <p align="center">
@@ -28,7 +28,7 @@
 - 根 Agent 从 `running` 回到 `idle` 时弹出 Windows Toast。
 - 包装 `userQuestions.ask`，计划审批和决策提问也会提醒。
 - 托盘角标统计待回复决策和尚未打开的完成会话。
-- 内置四套提示音，支持免打扰时段，并可跟随 Windows 专注助手静音。
+- 使用 Windows 系统默认通知音。支持免打扰时段，并可跟随 Windows 专注助手静音。
 - 以原生 DSH profile 插件安装，不修改任何内置包。
 
 ## 前置条件
@@ -143,3 +143,4 @@ npm run check
 项目状态、使用边界、技术架构和迭代记录从[文档交接入口](docs/00-交接入口/00-阅读导航.md)开始。
 
 本项目采用 [Apache License 2.0](LICENSE)。
+

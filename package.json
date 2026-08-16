@@ -1,7 +1,7 @@
 {
   "name": "@michengai/dsh-notify",
   "version": "0.1.0",
-  "description": "DeepSeek Harness 本机通知插件：任务完成与决策提问时弹出 Windows Toast、播放提示音，并在托盘显示待处理角标。",
+  "description": "DeepSeek Harness 本机通知插件：按完成、权限、提问分类弹出 Windows Toast，使用系统默认提示音。",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -39,7 +39,6 @@
   ],
   "scripts": {
     "build": "node scripts/build.mjs",
-    "sounds": "node scripts/generate-sounds.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "node --import tsx --test tests/*.test.ts",
     "check": "npm run typecheck && npm test && npm run build"
@@ -95,5 +94,3 @@
     "registry": "https://registry.npmjs.org/"
   }
 }
-
-

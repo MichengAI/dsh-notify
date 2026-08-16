@@ -6,12 +6,10 @@ import {
   normalizeConfig,
   readMinIntervalMs,
   type NotifyConfig,
-  type SoundId,
 } from '../config.ts'
 import { resolveScriptsDir } from '../paths.ts'
 import { spawnHiddenPowerShell } from './powershell.ts'
 import { isInQuietHours } from './quiet-hours.ts'
-import { resolveSoundPath, SOUND_PRESETS } from './sounds.ts'
 import {
   addCompletedItem,
   readTrayState,
@@ -31,8 +29,6 @@ export interface ToastRequest {
   title?: string
   message?: string
   detail?: string
-  sound?: SoundId
-  soundOn?: boolean
   ignoreQuiet?: boolean
   force?: boolean
 }
@@ -46,7 +42,6 @@ interface CompleteBufferItem {
 export interface NotifyEngine {
   showToast(request?: ToastRequest): void
   notifyComplete(itemTitle: string, line2: string, line3: string): void
-  previewSound(sound: SoundId): void
   updatePending(delta: number): void
   markCompleted(sessionId: string, title: string): void
   setFocused(focused: boolean): void
@@ -55,7 +50,6 @@ export interface NotifyEngine {
 
 export function createNotifyEngine(options: NotifyEngineOptions): NotifyEngine {
   const toastScript = path.join(resolveScriptsDir(), 'toast.ps1')
-  const playScript = path.join(resolveScriptsDir(), 'play.ps1')
   const trayScript = path.join(resolveScriptsDir(), 'tray.ps1')
   const logFile = path.join(options.stateDir, 'debug.log')
   const minIntervalMs = readMinIntervalMs()
@@ -116,8 +110,6 @@ export function createNotifyEngine(options: NotifyEngineOptions): NotifyEngine {
     lastToastAt = now
     const quiet = !request.ignoreQuiet && isInQuietHours(config.quietHours)
     if (quiet) return
-    const soundOn = request.soundOn ?? config.soundEnabled
-    const soundPath = resolveSoundPath(request.sound ?? config.sound)
     if (!existsSync(toastScript)) {
       throw new Error(`找不到 Toast 脚本：${toastScript}`)
     }
@@ -126,13 +118,12 @@ export function createNotifyEngine(options: NotifyEngineOptions): NotifyEngine {
         line1: String(request.title ?? 'DeepSeek Harness').slice(0, 200),
         line2: String(request.message ?? '').slice(0, 300),
         line3: request.detail ? String(request.detail).slice(0, 300) : '',
-        sound: soundOn && existsSync(soundPath) ? soundPath : '',
-        mute: !soundOn,
+        mute: false,
         respectSystemDnd: request.force ? false : config.respectSystemDnd,
         logFile,
       })
       child.once('error', error => writeLog(`toast spawn error: ${String((error as Error).message ?? error)}`))
-      writeLog(`toast spawn ok pid=${child.pid ?? '?'} script=${toastScript} sound=${soundPath}`)
+      writeLog(`toast spawn ok pid=${child.pid ?? '?'}`)
     } catch (error) {
       warn(`Toast 发送失败：${String((error as Error).message ?? error)}`)
       throw error
@@ -173,21 +164,6 @@ export function createNotifyEngine(options: NotifyEngineOptions): NotifyEngine {
   return {
     showToast,
     notifyComplete,
-    previewSound(sound) {
-      const preset = SOUND_PRESETS[sound]
-      const soundPath = resolveSoundPath(sound)
-      if (!existsSync(soundPath)) {
-        throw new Error(`找不到提示音文件：${preset.file}`)
-      }
-      if (!existsSync(playScript)) {
-        throw new Error('找不到试听脚本 play.ps1')
-      }
-      const child = spawnHiddenPowerShell(playScript, { sound: soundPath, logFile })
-      child.once('error', error => {
-        throw new Error(`试听启动失败：${String((error as Error).message ?? error)}`)
-      })
-      writeLog(`preview spawn pid=${child.pid ?? '?'} sound=${soundPath}`)
-    },
     updatePending(delta) {
       persist(state => shiftPending(state, delta))
       ensureTray()
@@ -198,12 +174,10 @@ export function createNotifyEngine(options: NotifyEngineOptions): NotifyEngine {
     },
     setFocused(next) {
       focused = next
-      writeLog(next ? "focus=true" : "focus=false")
+      writeLog(next ? 'focus=true' : 'focus=false')
     },
     isFocused() {
       return focused
     },
   }
 }
-
-

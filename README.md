@@ -28,7 +28,7 @@
 - Sends a Windows toast when the root Agent returns from `running` to `idle`.
 - Wraps `userQuestions.ask` so plan reviews and decision prompts also raise a toast.
 - Shows a tray badge for unanswered questions plus completed sessions that have not been opened yet.
-- Provides four built-in sounds, quiet hours, and optional respect for Windows Focus Assist.
+- Uses the Windows default notification sound. Quiet hours and Focus Assist are optional.
 - Installs as a native DSH profile plugin. It does not patch built-in DeepSeek packages.
 
 ## Prerequisites
@@ -100,7 +100,7 @@ Environment overrides:
 | --- | --- | --- | --- |
 | `$DSH_HOME\settings.yaml` `dsh-notify` section | Yes | Yes | No |
 | `$DSH_HOME\dsh-notify` tray state and debug log | Yes | Yes | No |
-| `/api/dsh-notify/config` and `/preview` | Same-origin settings UI | Same-origin settings UI | Local only |
+| `/api/dsh-notify/config` | Same-origin settings UI | Same-origin settings UI | Local only |
 
 - The plugin does not send telemetry and does not read credentials.
 - Child-agent completions and armed goal auto-continues do not raise a finish toast.
@@ -143,3 +143,4 @@ npm run check
 Project status, usage boundaries, architecture, and iteration records begin at the [documentation entry point](docs/00-交接入口/00-阅读导航.md).
 
 Licensed under [Apache License 2.0](LICENSE).
+
