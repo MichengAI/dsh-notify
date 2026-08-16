@@ -14,7 +14,8 @@ export function apply(ctx: ClientContext): void {
   ctx.slots.inject('settings.section', () => ctx.slots.register({
     name: 'settings.section',
     id: 'notify',
-    order: 80,
+    order: 29,
     label: '通知',
   }, NotifySection))
 }
+
