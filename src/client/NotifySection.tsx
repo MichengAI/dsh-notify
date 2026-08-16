@@ -93,11 +93,10 @@ export function NotifySection(): ReactElement {
 
   return (
     <div className="dsh-nt">
-      <p className="dsh-nt-intro">按类型分别决定：回合结束、权限批准、还是需要你回答问题。提示音使用系统默认通知音。</p>
+      <p className="dsh-nt-intro">完成后、需要权限或提问时，按类型分别提醒你。</p>
       {error ? <div className="dsh-nt-error">{error}</div> : null}
       {loading ? <p className="dsh-nt-hint">加载中…</p> : (
-        <>
-          <div className="dsh-nt-card">
+        <div className="dsh-nt-list">
             <Field label="轮次完成通知" hint="根 Agent 回合结束后何时提醒你。">
               <Picker
                 value={config.channels.complete}
@@ -123,7 +122,6 @@ export function NotifySection(): ReactElement {
                 onClick={() => void update({ channels: { ...config.channels, question: !config.channels.question } })}
               />
             </Field>
-          </div>
 
           <Field label="安静时段" hint="这段时间只记角标，不弹窗、不响铃。">
             <>
@@ -177,8 +175,10 @@ export function NotifySection(): ReactElement {
               onClick={() => void update({ completeMerge: !config.completeMerge })}
             />
           </Field>
-        </>
+        </div>
       )}
     </div>
   )
 }
+
+
