@@ -11,10 +11,10 @@ const CSS_TEXT = `
 .dsh-nt-label{font-size:13px;font-weight:500;line-height:1.5}
 .dsh-nt-hint{margin:0;color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:1.5}
 .dsh-nt-control{flex:none;display:flex;align-items:center;justify-content:flex-end;gap:10px;min-height:32px}
-.dsh-nt-switch{position:relative;width:40px;height:22px;flex:none;border:0;border-radius:999px;background:rgba(255,255,255,.16);cursor:pointer}
-.dsh-nt-switch:after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .16s ease}
-.dsh-nt-switch.is-on{background:var(--dsw-alias-brand-primary)}
-.dsh-nt-switch.is-on:after{transform:translateX(18px)}
+.dsh-nt-switch{position:relative;width:42px;height:26px;flex:none;border:0;border-radius:999px;background:rgba(120,120,128,.36);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);cursor:pointer}
+.dsh-nt-switch:after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.28);transition:transform .16s ease}
+.dsh-nt-switch.is-on{background:#34c759}
+.dsh-nt-switch.is-on:after{transform:translateX(16px)}
 .dsh-nt-picker{display:inline-flex;align-items:center;justify-content:space-between;gap:10px;min-width:148px;height:32px;padding:0 10px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;cursor:pointer}
 .dsh-nt-picker:hover:not(:disabled){border-color:var(--dsw-alias-label-dimmed)}
 .dsh-nt-caret{width:8px;height:8px;border-right:1.5px solid var(--dsw-alias-label-tertiary);border-bottom:1.5px solid var(--dsw-alias-label-tertiary);transform:rotate(45deg) translateY(-2px)}
@@ -36,3 +36,4 @@ export function installNotifyStyles(): () => void {
   document.head.appendChild(tag)
   return () => tag.remove()
 }
+
