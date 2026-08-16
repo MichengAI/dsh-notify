@@ -1,6 +1,5 @@
 import { appendFileSync, existsSync, mkdirSync } from 'node:fs'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 import {
   COMPLETE_MERGE_MS,
   isNotifyDisabledByEnv,
@@ -9,6 +8,7 @@ import {
   type NotifyConfig,
   type SoundId,
 } from '../config.ts'
+import { resolveScriptsDir } from '../paths.ts'
 import { spawnHiddenPowerShell } from './powershell.ts'
 import { isInQuietHours } from './quiet-hours.ts'
 import { resolveSoundPath, SOUND_PRESETS } from './sounds.ts'
@@ -19,8 +19,6 @@ import {
   trayStatePath,
   writeTrayState,
 } from './tray-state.ts'
-
-const HERE = path.dirname(fileURLToPath(import.meta.url))
 
 export interface NotifyEngineOptions {
   stateDir: string
@@ -36,6 +34,7 @@ export interface ToastRequest {
   sound?: SoundId
   soundOn?: boolean
   ignoreQuiet?: boolean
+  force?: boolean
 }
 
 interface CompleteBufferItem {
@@ -50,10 +49,6 @@ export interface NotifyEngine {
   previewSound(sound: SoundId): void
   updatePending(delta: number): void
   markCompleted(sessionId: string, title: string): void
-}
-
-function resolveScriptsDir(): string {
-  return path.resolve(HERE, '..', '..', 'scripts')
 }
 
 export function createNotifyEngine(options: NotifyEngineOptions): NotifyEngine {
@@ -110,15 +105,18 @@ export function createNotifyEngine(options: NotifyEngineOptions): NotifyEngine {
   const showToast = (request: ToastRequest = {}): void => {
     if (process.platform !== 'win32' || isNotifyDisabledByEnv()) return
     const config = normalizeConfig(options.configProvider())
-    if (!config.enabled) return
-    ensureTray()
+    if (!request.force && !config.enabled) return
+    if (!request.force) ensureTray()
     const now = Date.now()
-    if (now - lastToastAt < minIntervalMs) return
+    if (!request.force && now - lastToastAt < minIntervalMs) return
     lastToastAt = now
     const quiet = !request.ignoreQuiet && isInQuietHours(config.quietHours)
     if (quiet) return
     const soundOn = request.soundOn ?? config.soundEnabled
     const soundPath = resolveSoundPath(request.sound ?? config.sound)
+    if (!existsSync(toastScript)) {
+      throw new Error(`找不到 Toast 脚本：${toastScript}`)
+    }
     try {
       const child = spawnHiddenPowerShell(toastScript, {
         line1: String(request.title ?? 'DeepSeek Harness').slice(0, 200),
@@ -126,13 +124,14 @@ export function createNotifyEngine(options: NotifyEngineOptions): NotifyEngine {
         line3: request.detail ? String(request.detail).slice(0, 300) : '',
         sound: soundOn && existsSync(soundPath) ? soundPath : '',
         mute: !soundOn,
-        respectSystemDnd: config.respectSystemDnd,
+        respectSystemDnd: request.force ? false : config.respectSystemDnd,
         logFile,
       })
       child.once('error', error => writeLog(`toast spawn error: ${String((error as Error).message ?? error)}`))
-      writeLog(`toast spawn pid=${child.pid ?? '?'}`)
+      writeLog(`toast spawn ok pid=${child.pid ?? '?'} script=${toastScript} sound=${soundPath}`)
     } catch (error) {
       warn(`Toast 发送失败：${String((error as Error).message ?? error)}`)
+      throw error
     }
   }
 
@@ -172,12 +171,17 @@ export function createNotifyEngine(options: NotifyEngineOptions): NotifyEngine {
     notifyComplete,
     previewSound(sound) {
       const preset = SOUND_PRESETS[sound]
+      const soundPath = resolveSoundPath(sound)
+      if (!existsSync(soundPath)) {
+        throw new Error(`找不到提示音文件：${preset.file}`)
+      }
       showToast({
         title: 'DSH 提示音试听',
         message: preset.label + ' · ' + preset.desc,
         sound,
         soundOn: true,
         ignoreQuiet: true,
+        force: true,
       })
     },
     updatePending(delta) {
@@ -190,4 +194,3 @@ export function createNotifyEngine(options: NotifyEngineOptions): NotifyEngine {
     },
   }
 }
-

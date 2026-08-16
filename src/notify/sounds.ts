@@ -1,9 +1,7 @@
 import { existsSync } from 'node:fs'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 import type { SoundId } from '../config.ts'
-
-const HERE = path.dirname(fileURLToPath(import.meta.url))
+import { resolveAssetsDir } from '../paths.ts'
 
 export interface SoundPreset {
   id: SoundId
@@ -21,10 +19,6 @@ export const SOUND_PRESETS: Record<SoundId, SoundPreset> = {
 
 export function listSoundPresets(): Array<Pick<SoundPreset, 'id' | 'label' | 'desc'>> {
   return Object.values(SOUND_PRESETS).map(({ id, label, desc }) => ({ id, label, desc }))
-}
-
-export function resolveAssetsDir(fromHere = HERE): string {
-  return path.resolve(fromHere, '..', '..', 'assets')
 }
 
 export function resolveSoundPath(sound: SoundId, assetsDir = resolveAssetsDir()): string {

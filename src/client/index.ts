@@ -18,4 +18,3 @@ export function apply(ctx: ClientContext): void {
     label: '通知',
   }, NotifySection))
 }
-

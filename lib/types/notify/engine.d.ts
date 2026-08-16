@@ -15,6 +15,7 @@ export interface ToastRequest {
     sound?: SoundId;
     soundOn?: boolean;
     ignoreQuiet?: boolean;
+    force?: boolean;
 }
 export interface NotifyEngine {
     showToast(request?: ToastRequest): void;

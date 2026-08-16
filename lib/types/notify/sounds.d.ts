@@ -7,5 +7,4 @@ export interface SoundPreset {
 }
 export declare const SOUND_PRESETS: Record<SoundId, SoundPreset>;
 export declare function listSoundPresets(): Array<Pick<SoundPreset, 'id' | 'label' | 'desc'>>;
-export declare function resolveAssetsDir(fromHere?: string): string;
 export declare function resolveSoundPath(sound: SoundId, assetsDir?: string): string;

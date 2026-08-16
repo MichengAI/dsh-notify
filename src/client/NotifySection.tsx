@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState, type ReactElement } from 'react'
-import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
 import { TIME_PATTERN, createDefaultConfig, type NotifyConfig, type SoundId } from '../config.ts'
 import { fetchNotifyConfig, patchNotifyConfig, previewNotifySound, type SoundOption } from './api.ts'
-import { styles } from './styles.ts'
+import { installNotifyStyles } from './styles.ts'
 
 const FALLBACK_SOUNDS: SoundOption[] = [
   { id: 'soft', label: '柔和（默认）', desc: '低音双击，短促但不刺耳' },
@@ -11,21 +10,25 @@ const FALLBACK_SOUNDS: SoundOption[] = [
   { id: 'crisp', label: '清脆', desc: '高音短促，适合嘈杂环境' },
 ]
 
-function SwitchRow(props: { label: string; hint?: string; checked: boolean; onToggle: () => void }): ReactElement {
+function SwitchRow(props: {
+  label: string
+  hint?: string
+  checked: boolean
+  onToggle: () => void
+}): ReactElement {
   return (
-    <div style={styles.card}>
-      <div style={styles.cardText}>
-        <div style={styles.label}>{props.label}</div>
-        {props.hint ? <div style={styles.desc}>{props.hint}</div> : null}
+    <div className="dsh-nt-field">
+      <div className="dsh-nt-copy">
+        <div className="dsh-nt-label">{props.label}</div>
+        {props.hint ? <p className="dsh-nt-hint">{props.hint}</p> : null}
       </div>
       <button
         type="button"
-        style={props.checked ? styles.switch : { ...styles.switch, ...styles.switchOff }}
+        className={props.checked ? 'dsh-nt-switch is-on' : 'dsh-nt-switch'}
+        role="switch"
+        aria-checked={props.checked}
         onClick={props.onToggle}
-        aria-pressed={props.checked}
-      >
-        <i style={props.checked ? styles.knob : { ...styles.knob, ...styles.knobOff }} />
-      </button>
+      />
     </div>
   )
 }
@@ -35,6 +38,9 @@ export function NotifySection(): ReactElement {
   const [sounds, setSounds] = useState<SoundOption[]>(FALLBACK_SOUNDS)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [previewing, setPreviewing] = useState<SoundId | null>(null)
+
+  useEffect(() => installNotifyStyles(), [])
 
   useEffect(() => {
     void fetchNotifyConfig()
@@ -56,50 +62,74 @@ export function NotifySection(): ReactElement {
     }
   }, [])
 
+  const preview = useCallback(async (sound: SoundId) => {
+    setError('')
+    setPreviewing(sound)
+    try {
+      await previewNotifySound(sound)
+    } catch (err) {
+      setError(String((err as Error).message ?? err))
+    } finally {
+      setPreviewing(null)
+    }
+  }, [])
+
   return (
-    <div style={styles.root}>
-      <p style={styles.hint}>任务完成或需要你决策时，弹出系统通知、播放提示音，并在托盘显示待处理数量。保存后立即生效。</p>
-      {error ? <div style={styles.error}>{error}</div> : null}
-      {loading ? <p style={styles.hint}>加载中…</p> : (
+    <div className="dsh-nt">
+      <h1>通知</h1>
+      <p className="dsh-nt-intro">任务完成或需要你决策时，弹出系统通知、播放提示音，并在托盘显示待处理数量。修改后立即生效。</p>
+      {error ? <div className="dsh-nt-error">{error}</div> : null}
+      {loading ? <p className="dsh-nt-hint">加载中…</p> : (
         <>
-          <div style={styles.group}>
-            <div style={styles.groupTitle}>总开关</div>
-            <SwitchRow label="启用通知" checked={config.enabled} onToggle={() => void update({ enabled: !config.enabled })} />
-          </div>
-          <hr style={styles.divider} />
-          <div style={styles.group}>
-            <div style={styles.groupTitle}>提示音</div>
-            <SwitchRow label="播放提示音" checked={config.soundEnabled} onToggle={() => void update({ soundEnabled: !config.soundEnabled })} />
-            {sounds.map(sound => {
-              const selected = sound.id === config.sound
-              return (
-                <div
-                  key={sound.id}
-                  style={selected ? { ...styles.row, ...styles.rowOn } : styles.row}
-                  onClick={() => void update({ sound: sound.id })}
-                >
-                  <span style={selected ? { ...styles.radio, ...styles.radioOn } : styles.radio} />
-                  <div style={styles.cardText}>
-                    <div style={styles.label}>{sound.label}</div>
-                    <div style={styles.desc}>{sound.desc}</div>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={event => {
-                      event.stopPropagation()
-                      void previewNotifySound(sound.id as SoundId)
-                    }}
+          <SwitchRow
+            label="启用通知"
+            hint="关闭后不再弹出 Toast，也不再播放提示音。"
+            checked={config.enabled}
+            onToggle={() => void update({ enabled: !config.enabled })}
+          />
+          <SwitchRow
+            label="播放提示音"
+            checked={config.soundEnabled}
+            onToggle={() => void update({ soundEnabled: !config.soundEnabled })}
+          />
+
+          <div className="dsh-nt-group">
+            <div className="dsh-nt-group-title">提示音</div>
+            <div className="dsh-nt-list">
+              {sounds.map(sound => {
+                const selected = sound.id === config.sound
+                return (
+                  <button
+                    key={sound.id}
+                    type="button"
+                    className={selected ? 'dsh-nt-sound is-on' : 'dsh-nt-sound'}
+                    onClick={() => void update({ sound: sound.id })}
                   >
-                    试听
-                  </Button>
-                </div>
-              )
-            })}
+                    <span className="dsh-nt-radio" />
+                    <span className="dsh-nt-sound-text">
+                      <span className="dsh-nt-label">{sound.label}</span>
+                      <span className="dsh-nt-hint">{sound.desc}</span>
+                    </span>
+                    <span
+                      className="dsh-nt-preview"
+                      role="button"
+                      aria-label={`试听${sound.label}`}
+                      onClick={event => {
+                        event.preventDefault()
+                        event.stopPropagation()
+                        void preview(sound.id)
+                      }}
+                    >
+                      {previewing === sound.id ? '播放中' : '试听'}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
           </div>
-          <hr style={styles.divider} />
-          <div style={styles.group}>
-            <div style={styles.groupTitle}>打扰控制</div>
+
+          <div className="dsh-nt-group">
+            <div className="dsh-nt-group-title">打扰控制</div>
             <SwitchRow
               label="免打扰时段"
               hint="时段内只累计托盘角标，不弹窗、不响铃。"
@@ -109,10 +139,9 @@ export function NotifySection(): ReactElement {
               })}
             />
             {config.quietHours.enabled ? (
-              <div style={styles.timeRow}>
-                <span style={styles.desc}>开始</span>
+              <div className="dsh-nt-times">
+                <span className="dsh-nt-hint">开始</span>
                 <input
-                  style={styles.timeInput}
                   defaultValue={config.quietHours.start}
                   onBlur={event => {
                     if (TIME_PATTERN.test(event.target.value)) {
@@ -120,9 +149,8 @@ export function NotifySection(): ReactElement {
                     }
                   }}
                 />
-                <span style={styles.desc}>结束</span>
+                <span className="dsh-nt-hint">结束</span>
                 <input
-                  style={styles.timeInput}
                   defaultValue={config.quietHours.end}
                   onBlur={event => {
                     if (TIME_PATTERN.test(event.target.value)) {
@@ -139,22 +167,26 @@ export function NotifySection(): ReactElement {
               onToggle={() => void update({ respectSystemDnd: !config.respectSystemDnd })}
             />
           </div>
-          <hr style={styles.divider} />
-          <div style={styles.group}>
-            <div style={styles.groupTitle}>任务完成</div>
-            <div
-              style={config.completeMode === 'toast' ? { ...styles.row, ...styles.rowOn } : styles.row}
-              onClick={() => void update({ completeMode: 'toast' })}
-            >
-              <span style={config.completeMode === 'toast' ? { ...styles.radio, ...styles.radioOn } : styles.radio} />
-              <div style={styles.label}>弹窗 + 提示音</div>
-            </div>
-            <div
-              style={config.completeMode === 'badge-only' ? { ...styles.row, ...styles.rowOn } : styles.row}
-              onClick={() => void update({ completeMode: 'badge-only' })}
-            >
-              <span style={config.completeMode === 'badge-only' ? { ...styles.radio, ...styles.radioOn } : styles.radio} />
-              <div style={styles.label}>仅角标</div>
+
+          <div className="dsh-nt-group">
+            <div className="dsh-nt-group-title">任务完成</div>
+            <div className="dsh-nt-mode">
+              <button
+                type="button"
+                className={config.completeMode === 'toast' ? 'dsh-nt-choice is-on' : 'dsh-nt-choice'}
+                onClick={() => void update({ completeMode: 'toast' })}
+              >
+                <span className="dsh-nt-radio" />
+                <span className="dsh-nt-label">弹窗 + 提示音</span>
+              </button>
+              <button
+                type="button"
+                className={config.completeMode === 'badge-only' ? 'dsh-nt-choice is-on' : 'dsh-nt-choice'}
+                onClick={() => void update({ completeMode: 'badge-only' })}
+              >
+                <span className="dsh-nt-radio" />
+                <span className="dsh-nt-label">仅角标</span>
+              </button>
             </div>
             <SwitchRow
               label="合并同类通知"
@@ -168,3 +200,4 @@ export function NotifySection(): ReactElement {
     </div>
   )
 }
+
