@@ -1,6 +1,3 @@
-export const COMPLETE_MODES = ['toast', 'badge-only'] as const
-export type CompleteMode = (typeof COMPLETE_MODES)[number]
-
 export const COMPLETE_WHEN = ['always', 'unfocused', 'off'] as const
 export type CompleteWhen = (typeof COMPLETE_WHEN)[number]
 
@@ -26,10 +23,8 @@ export interface NotifyChannels {
 }
 
 export interface NotifyConfig {
-  enabled: boolean
   quietHours: QuietHoursConfig
   respectSystemDnd: boolean
-  completeMode: CompleteMode
   completeMerge: boolean
   channels: NotifyChannels
 }
@@ -44,17 +39,11 @@ export function createDefaultChannels(): NotifyChannels {
 
 export function createDefaultConfig(): NotifyConfig {
   return {
-    enabled: true,
     quietHours: { enabled: false, start: '22:00', end: '08:00' },
     respectSystemDnd: true,
-    completeMode: 'toast',
     completeMerge: true,
     channels: createDefaultChannels(),
   }
-}
-
-function isCompleteMode(value: unknown): value is CompleteMode {
-  return typeof value === 'string' && (COMPLETE_MODES as readonly string[]).includes(value)
 }
 
 function isCompleteWhen(value: unknown): value is CompleteWhen {
@@ -65,10 +54,10 @@ function normalizeTime(value: unknown, fallback: string): string {
   return typeof value === 'string' && TIME_PATTERN.test(value) ? value : fallback
 }
 
-function normalizeChannels(raw: unknown, fallback: NotifyChannels, completeMode: CompleteMode): NotifyChannels {
+function normalizeChannels(raw: unknown, fallback: NotifyChannels, legacyCompleteMode: unknown): NotifyChannels {
   const next = { ...fallback }
   if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
-    if (completeMode === 'badge-only') next.complete = 'off'
+    if (legacyCompleteMode === 'badge-only') next.complete = 'off'
     return next
   }
   const input = raw as Record<string, unknown>
@@ -82,7 +71,6 @@ export function normalizeConfig(raw: unknown): NotifyConfig {
   const base = createDefaultConfig()
   if (raw === null || typeof raw !== 'object') return base
   const input = raw as Record<string, unknown>
-  if (typeof input.enabled === 'boolean') base.enabled = input.enabled
   if (input.quietHours !== null && typeof input.quietHours === 'object') {
     const hours = input.quietHours as Record<string, unknown>
     if (typeof hours.enabled === 'boolean') base.quietHours.enabled = hours.enabled
@@ -90,9 +78,8 @@ export function normalizeConfig(raw: unknown): NotifyConfig {
     base.quietHours.end = normalizeTime(hours.end, base.quietHours.end)
   }
   if (typeof input.respectSystemDnd === 'boolean') base.respectSystemDnd = input.respectSystemDnd
-  if (isCompleteMode(input.completeMode)) base.completeMode = input.completeMode
   if (typeof input.completeMerge === 'boolean') base.completeMerge = input.completeMerge
-  base.channels = normalizeChannels(input.channels, base.channels, base.completeMode)
+  base.channels = normalizeChannels(input.channels, base.channels, input.completeMode)
   return base
 }
 
@@ -125,4 +112,3 @@ export function readMinIntervalMs(): number {
   const parsed = Number(process.env.DSH_NOTIFY_MIN_INTERVAL_MS ?? DEFAULT_MIN_INTERVAL_MS)
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : DEFAULT_MIN_INTERVAL_MS
 }
-

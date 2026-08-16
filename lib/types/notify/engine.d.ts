@@ -13,7 +13,6 @@ export interface ToastRequest {
     message?: string;
     detail?: string;
     ignoreQuiet?: boolean;
-    force?: boolean;
 }
 export interface NotifyEngine {
     showToast(request?: ToastRequest): void;

@@ -27,12 +27,7 @@ declare module '@deepseek-ai/dsh-home-paths' {
 }
 
 declare module '@deepseek-ai/dsh-client-ui-primitives' {
-  import type { ButtonHTMLAttributes, ReactNode } from 'react'
   export const Menu: (props: any) => any
-  export const Button: (props: ButtonHTMLAttributes<HTMLButtonElement> & {
-    variant?: 'outline' | 'solid'
-    size?: 'sm' | 'md'
-    children?: ReactNode
-  }) => ReactNode
 }
+
 

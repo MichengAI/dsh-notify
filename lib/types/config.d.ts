@@ -1,5 +1,3 @@
-export declare const COMPLETE_MODES: readonly ["toast", "badge-only"];
-export type CompleteMode = (typeof COMPLETE_MODES)[number];
 export declare const COMPLETE_WHEN: readonly ["always", "unfocused", "off"];
 export type CompleteWhen = (typeof COMPLETE_WHEN)[number];
 export declare const TIME_PATTERN: RegExp;
@@ -20,10 +18,8 @@ export interface NotifyChannels {
     question: boolean;
 }
 export interface NotifyConfig {
-    enabled: boolean;
     quietHours: QuietHoursConfig;
     respectSystemDnd: boolean;
-    completeMode: CompleteMode;
     completeMerge: boolean;
     channels: NotifyChannels;
 }

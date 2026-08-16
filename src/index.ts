@@ -145,14 +145,12 @@ async function setupSettings(ctx: Context): Promise<SettingsScopeLike | null> {
   if (settings === undefined) return null
 
   const schema = Schema.object({
-    enabled: Schema.boolean().default(true),
     quietHours: Schema.object({
       enabled: Schema.boolean().default(false),
       start: Schema.string().default('22:00'),
       end: Schema.string().default('08:00'),
     }).default({ enabled: false, start: '22:00', end: '08:00' }),
     respectSystemDnd: Schema.boolean().default(true),
-    completeMode: Schema.union([Schema.const('toast'), Schema.const('badge-only')]).default('toast'),
     completeMerge: Schema.boolean().default(true),
     channels: Schema.object({
       complete: Schema.union([Schema.const('always'), Schema.const('unfocused'), Schema.const('off')]).default('unfocused'),
@@ -183,5 +181,6 @@ async function setupSettings(ctx: Context): Promise<SettingsScopeLike | null> {
 
   return null
 }
+
 
 

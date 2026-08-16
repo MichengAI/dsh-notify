@@ -5,7 +5,7 @@
 <h1 align="center">DSH Notify</h1>
 
 <p align="center">
-  <strong>A DeepSeek Harness Web plugin for Windows toasts, custom sounds, and a tray badge when a task finishes or needs a decision.</strong>
+  <strong>A DeepSeek Harness Web plugin for Windows toasts and a tray badge for turn completion, permission prompts, and questions.</strong>
 </p>
 
 <p align="center">
@@ -78,20 +78,18 @@ Open **Settings → Notifications**, then use the panel as follows:
 
 | Goal | Action | Scope |
 | --- | --- | --- |
-| Turn the plugin off | Toggle **Enable notifications**. | All toasts and sounds |
-| Choose a sound | Select Soft, Brisk, Calm, or Crisp, then **Preview**. | Host-side playback |
-| Mute sounds only | Toggle **Play notification sound**. | Sounds only; toasts still appear |
-| Quiet hours | Enable the schedule and set start/end times. Cross-midnight windows are supported. | Toasts and sounds |
-| Follow Focus Assist | Toggle **Follow system Do Not Disturb**. | Sounds while Focus Assist is on |
-| Completion style | Choose **Toast + sound** or **Badge only**. | Root-agent completion events |
-| Merge completions | Keep **Merge similar notifications** on to combine finishes within 5 seconds. | Completion toasts |
+| Turn completion alerts | Choose **Always**, **Only when unfocused**, or **Off**. | Root-agent completion |
+| Permission alerts | Toggle **Enable permission notifications**. | Tool and plan approval |
+| Question alerts | Toggle **Enable question notifications**. | Decisions that block progress |
+| Quiet hours | Enable the schedule and set start/end times. | Toasts during that window |
+| Follow Focus Assist | Toggle **Follow system Do Not Disturb**. | System Focus Assist |
+| Merge completions | Combine finishes that arrive within a few seconds. | Completion toasts |
 
 Environment overrides:
 
 | Variable | Effect |
 | --- | --- |
 | `DSH_NOTIFY=0` | Disable the plugin entirely |
-| `DSH_NOTIFY_SOUND` | Override the WAV path |
 | `DSH_NOTIFY_MIN_INTERVAL_MS` | Toast throttle, default `2500` |
 
 ## Privacy and safety
@@ -143,4 +141,5 @@ npm run check
 Project status, usage boundaries, architecture, and iteration records begin at the [documentation entry point](docs/00-交接入口/00-阅读导航.md).
 
 Licensed under [Apache License 2.0](LICENSE).
+
 

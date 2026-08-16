@@ -30,7 +30,6 @@ export interface ToastRequest {
   message?: string
   detail?: string
   ignoreQuiet?: boolean
-  force?: boolean
 }
 
 interface CompleteBufferItem {
@@ -103,10 +102,9 @@ export function createNotifyEngine(options: NotifyEngineOptions): NotifyEngine {
   const showToast = (request: ToastRequest = {}): void => {
     if (process.platform !== 'win32' || isNotifyDisabledByEnv()) return
     const config = normalizeConfig(options.configProvider())
-    if (!request.force && !config.enabled) return
-    if (!request.force) ensureTray()
+    ensureTray()
     const now = Date.now()
-    if (!request.force && now - lastToastAt < minIntervalMs) return
+    if (now - lastToastAt < minIntervalMs) return
     lastToastAt = now
     const quiet = !request.ignoreQuiet && isInQuietHours(config.quietHours)
     if (quiet) return
@@ -119,7 +117,7 @@ export function createNotifyEngine(options: NotifyEngineOptions): NotifyEngine {
         line2: String(request.message ?? '').slice(0, 300),
         line3: request.detail ? String(request.detail).slice(0, 300) : '',
         mute: false,
-        respectSystemDnd: request.force ? false : config.respectSystemDnd,
+        respectSystemDnd: config.respectSystemDnd,
         logFile,
       })
       child.once('error', error => writeLog(`toast spawn error: ${String((error as Error).message ?? error)}`))
@@ -150,7 +148,6 @@ export function createNotifyEngine(options: NotifyEngineOptions): NotifyEngine {
 
   const notifyComplete = (itemTitle: string, line2: string, line3: string): void => {
     const config = normalizeConfig(options.configProvider())
-    if (!config.enabled || config.completeMode === 'badge-only') return
     if (!config.completeMerge) {
       showToast({ title: 'DSH 任务完成', message: line2, detail: line3 })
       return
@@ -181,3 +178,4 @@ export function createNotifyEngine(options: NotifyEngineOptions): NotifyEngine {
     },
   }
 }
+
