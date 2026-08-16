@@ -56,6 +56,7 @@
       "inject": [
         "@deepseek-ai/dsh-client-runtime",
         "@deepseek-ai/dsh-client-ui-slots",
+        "@deepseek-ai/dsh-client-ui-settings",
         "@deepseek-ai/dsh-client-ui-primitives"
       ]
     }
@@ -94,4 +95,5 @@
     "registry": "https://registry.npmjs.org/"
   }
 }
+
 
