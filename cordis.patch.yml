@@ -1,0 +1,8 @@
+# @michengai/dsh-notify
+#
+# 把本机通知插件插入 profile。一行同时挂载：
+# - 宿主：监听回合结束、包装提问入口、注册设置与本机路由
+# - 浏览器：设置页「通知」区段
+- insert:
+    - id: dsh-notify
+      name: '@michengai/dsh-notify'

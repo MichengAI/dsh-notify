@@ -1,0 +1,8 @@
+@michengai/dsh-notify
+Copyright 2026 MichengAI
+
+本软件按 Apache License 2.0 授权，详见 LICENSE。
+
+能力思路参考了社区项目 Sutera-Diffusus/dsh-windows-notify
+（MIT，https://github.com/Sutera-Diffusus/dsh-windows-notify），
+实现按 MichengAI 工程约定独立重写，不包含其源码与音频资产。

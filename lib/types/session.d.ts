@@ -1,0 +1,16 @@
+export interface SessionLike {
+    title?: unknown;
+    events?: unknown;
+}
+export interface AgentLike {
+    id?: unknown;
+    session?: SessionLike;
+}
+export declare function readSessionTitle(session: SessionLike | undefined): string | undefined;
+export declare function readAssistantSnippet(session: SessionLike | undefined, maxChars: number): string;
+export declare function isRootAgent(ctx: {
+    get(name: string): unknown;
+}, agent: unknown): boolean;
+export declare function isGoalAutoContinuing(ctx: {
+    get(name: string): unknown;
+}, agent: unknown): boolean;
