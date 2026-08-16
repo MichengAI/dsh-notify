@@ -33,6 +33,7 @@
     "scripts/tray.ps1",
     "cordis.patch.yml",
     "README.md",
+    "README.zh-CN.md",
     "LICENSE",
     "NOTICE"
   ],
@@ -93,3 +94,4 @@
     "registry": "https://registry.npmjs.org/"
   }
 }
+
